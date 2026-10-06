@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dev-dist/
+*.local
+.DS_Store
+
+# Backups do app nunca entram no repositório (o repo é público)
+tesourinha-backup*
+*.backup.json
+backups/
