@@ -48,8 +48,9 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 - Destaque da tela: "Dá para gastar por dia útil" = saldo ÷ dias na empresa restantes
   no ciclo (contando hoje, se for dia na empresa).
 - Dias na empresa configuráveis por dia da semana em Ajustes; padrão segunda a sexta.
-- Feriados nacionais são descontados (fixos + móveis: Carnaval, Sexta-feira Santa,
-  Corpus Christi). Feriados estaduais/municipais ficam fora por enquanto.
+- Feriados nacionais são descontados (fixos + móveis: Sexta-feira Santa). Carnaval
+  (segunda e terça) e Corpus Christi também são descontados: a empresa do Richard não
+  funciona nesses dias (confirmado em 06/10/2026). Estaduais/municipais ficam fora por enquanto.
 - O saldo que sobra acumula para o próximo ciclo (configurável).
 
 ## Onde paramos (05/10/2026)
@@ -86,8 +87,6 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 
 ### Pendências para confirmar com o Richard
 
-- Carnaval e Corpus Christi (ponto facultativo) estão FORA da conta de dias úteis do
-  voucher por padrão. Confirmar se a empresa dele funciona nesses dias.
 - Questões ainda abertas do briefing (seção 10): dados reais do cartão e do voucher
   (preenchidos pelo próprio usuário em Ajustes); receitas recorrentes (salário) na V1;
   preferências visuais da namorada.
