@@ -22,9 +22,9 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'portrait',
-        // Provisório: definidos de verdade no plano de design
-        background_color: '#ffffff',
-        theme_color: '#ffffff',
+        // Papel (fundo claro do app); no escuro a cor é trocada em tempo de execução
+        background_color: '#F6F7F4',
+        theme_color: '#F6F7F4',
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],

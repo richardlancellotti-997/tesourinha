@@ -1,38 +1,70 @@
-import type { ComponentChildren } from 'preact'
-import { href, useRoute } from './router'
-
-// Telas vazias da Etapa 0. O layout real vem depois da aprovação do plano de design.
-const screens: { path: string; title: string; label: string }[] = [
-  { path: '/', title: 'Início', label: 'Início' },
-  { path: '/lancar', title: 'Lançar', label: 'Lançar' },
-  { path: '/fatura', title: 'Fatura', label: 'Fatura' },
-  { path: '/voucher', title: 'Voucher', label: 'Voucher' },
-  { path: '/ajustes', title: 'Ajustes', label: 'Ajustes' },
-]
-
-function Screen({ title, children }: { title: string; children?: ComponentChildren }) {
-  return (
-    <main class="screen">
-      <h1>{title}</h1>
-      {children ?? <p class="placeholder">Tela em construção.</p>}
-    </main>
-  )
-}
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useEffect } from 'preact/hooks'
+import { db } from './db/db'
+import { PERFIL_ID } from './db/repo'
+import type { Kind } from './db/types'
+import { useRota } from './router'
+import { useAviso } from './ui/aviso'
+import { BoasVindas } from './ui/screens/BoasVindas'
+import { Categorias } from './ui/screens/Categorias'
+import { EmBreve } from './ui/screens/EmBreve'
+import { Inicio } from './ui/screens/Inicio'
+import { Lancar } from './ui/screens/Lancar'
+import { Mais } from './ui/screens/Mais'
+import { TabBar } from './ui/TabBar'
+import { aplicarTema } from './ui/theme'
 
 export function App() {
-  const path = useRoute()
-  const screen = screens.find((s) => s.path === path) ?? screens[0]
+  const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [], 'carregando' as const)
+  const rota = useRota()
+  const aviso = useAviso()
+
+  useEffect(() => {
+    if (perfil && perfil !== 'carregando') aplicarTema(perfil)
+  }, [perfil])
+
+  if (perfil === 'carregando') return null
+  if (!perfil) return <BoasVindas />
+
+  const [tela, param] = rota.partes
+  let conteudo
+  let aba: string | null = null
+
+  switch (tela) {
+    case 'lancar':
+      // Lançar ocupa a tela toda, sem a barra de navegação
+      conteudo = <Lancar key={param ?? 'novo'} id={param} tipoInicial={(rota.params.get('tipo') as Kind) ?? undefined} />
+      break
+    case 'cartao':
+      conteudo = <EmBreve qual="cartao" />
+      aba = 'cartao'
+      break
+    case 'voucher':
+      conteudo = <EmBreve qual="voucher" />
+      aba = 'voucher'
+      break
+    case 'mais':
+      conteudo = <Mais />
+      aba = 'mais'
+      break
+    case 'categorias':
+      conteudo = <Categorias />
+      aba = 'mais'
+      break
+    default:
+      conteudo = <Inicio />
+      aba = 'inicio'
+  }
 
   return (
-    <div class="shell">
-      <Screen title={screen.title} />
-      <nav class="tabbar" aria-label="Navegação principal">
-        {screens.map((s) => (
-          <a key={s.path} href={href(s.path)} aria-current={s.path === screen.path ? 'page' : undefined}>
-            {s.label}
-          </a>
-        ))}
-      </nav>
-    </div>
+    <>
+      {conteudo}
+      {aba && <TabBar ativa={aba} />}
+      {aviso && (
+        <div class="aviso" role="status" key={aviso.id}>
+          {aviso.texto}
+        </div>
+      )}
+    </>
   )
 }

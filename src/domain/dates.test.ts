@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { addMonths, dateWithClampedDay, daysInMonth, diffDays, today } from './dates'
+import { addMonths, dateWithClampedDay, daysInMonth, diaDaSemana, diffDays, rotuloData, tituloMes, today } from './dates'
+
+describe('rótulos de data', () => {
+  it('título do mês', () => {
+    expect(tituloMes('2026-10')).toBe('Outubro de 2026')
+    expect(tituloMes('2027-03')).toBe('Março de 2027')
+  })
+  it('dia da semana', () => {
+    expect(diaDaSemana('2026-10-05')).toBe(1) // segunda
+    expect(diaDaSemana('2026-10-14')).toBe(3) // quarta
+  })
+  it('hoje, ontem, dia da semana e outro ano', () => {
+    expect(rotuloData('2026-10-06', '2026-10-06')).toBe('Hoje, 6 out')
+    expect(rotuloData('2026-10-05', '2026-10-06')).toBe('Ontem, 5 out')
+    expect(rotuloData('2026-10-03', '2026-10-06')).toBe('Sáb, 3 out')
+    expect(rotuloData('2025-12-31', '2026-01-02')).toBe('31 dez 2025')
+    expect(rotuloData('2025-12-31', '2026-01-01')).toBe('Ontem, 31 dez')
+  })
+})
 
 describe('today', () => {
   it('usa o fuso de São Paulo, não UTC', () => {

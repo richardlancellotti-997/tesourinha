@@ -17,6 +17,8 @@ export interface Profile extends BaseRecord {
   corDestaque: string
   tema: Theme
   ultimoBackupEm?: string
+  /** Última forma de pagamento usada num gasto: vem pré-selecionada no próximo. */
+  ultimaForma?: PaymentMethod
 }
 
 export interface Category extends BaseRecord {

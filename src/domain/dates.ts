@@ -47,6 +47,39 @@ export function addMonths(ym: YearMonth, n: number): YearMonth {
   return `${Math.floor(idx / 12)}-${pad((idx % 12) + 1)}`
 }
 
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const DIAS_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/** "2026-10" → "outubro" */
+export function nomeMes(ym: YearMonth): string {
+  return MESES[Number(ym.slice(5, 7)) - 1]
+}
+
+/** "2026-10" → "Outubro de 2026" */
+export function tituloMes(ym: YearMonth): string {
+  return `${capitalizar(nomeMes(ym))} de ${ym.slice(0, 4)}`
+}
+
+/** 0 = domingo … 6 = sábado */
+export function diaDaSemana(d: LocalDate): number {
+  const { year, month, day } = parseDate(d)
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+}
+
+/** "Hoje, 6 out", "Ontem, 5 out", "Sáb, 3 out" ou, em outro ano, "3 out 2025". */
+export function rotuloData(d: LocalDate, hoje: LocalDate): string {
+  const { year, month, day } = parseDate(d)
+  const curta = `${day} ${MESES_CURTOS[month - 1]}`
+  const dif = diffDays(d, hoje)
+  if (dif === 0) return `Hoje, ${curta}`
+  if (dif === 1) return `Ontem, ${curta}`
+  if (year !== parseDate(hoje).year) return `${curta} ${year}`
+  return `${DIAS_CURTOS[diaDaSemana(d)]}, ${curta}`
+}
+
 /** Diferença em dias entre duas datas locais (b - a). */
 export function diffDays(a: LocalDate, b: LocalDate): number {
   const toUTC = (d: LocalDate) => {

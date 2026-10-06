@@ -1,23 +1,84 @@
-/* Base provisória da Etapa 0: neutra de propósito.
-   Paleta, tipografia e escala definitivas entram após o plano de design. */
+/* Tesourinha: visual aprovado (ver DECISOES.md).
+   Tokens claros em :root; escuros pelo sistema (tema automático) ou por data-theme="escuro". */
+
+@import '@fontsource-variable/archivo/wdth.css';
 
 :root {
-  --bg: #ffffff;
-  --fg: #1a1a1a;
-  --muted: #6b6b6b;
-  --line: #e2e2e2;
-  --accent: #1a1a1a;
-  color-scheme: light dark;
+  --accent: #2442c9;
+
+  --papel: #f6f7f4;
+  --folha: #ffffff;
+  --tinta: #1b1f24;
+  --grafite: #5b626a;
+  --linha: #dfe2dc;
+  --tecla: #eceeea;
+  --entrada: #1d7a4e;
+  --negativo: #b3261e;
+  --acc: var(--accent);
+  --sobre-acc: #ffffff;
+
+  --cat-azul: #2f6fa8;
+  --cat-laranja: #c2552d;
+  --cat-verde: #1f8a5a;
+  --cat-lilas: #7445b0;
+  --cat-ambar: #b87a00;
+  --cat-magenta: #b23a5e;
+  --cat-ciano: #008cb0;
+  --cat-ocre: #9a6420;
+  --cat-cinza: #7a8088;
+
+  --tabbar: 64px;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121212;
-    --fg: #ececec;
-    --muted: #9a9a9a;
-    --line: #2a2a2a;
-    --accent: #ececec;
+  :root:not([data-theme='claro']) {
+    --papel: #14171b;
+    --folha: #1d2126;
+    --tinta: #e9ebe7;
+    --grafite: #9ba2a9;
+    --linha: #2c3137;
+    --tecla: #262b31;
+    --entrada: #5fc48f;
+    --negativo: #ff8a80;
+    --acc: color-mix(in oklab, var(--accent) 55%, white);
+    --sobre-acc: #14171b;
+
+    --cat-azul: #5b95e0;
+    --cat-laranja: #d96c47;
+    --cat-verde: #33a56f;
+    --cat-lilas: #9c7bdb;
+    --cat-ambar: #b8841a;
+    --cat-magenta: #d96c90;
+    --cat-ciano: #22a6b8;
+    --cat-ocre: #bc8547;
+    --cat-cinza: #8e959c;
+    color-scheme: dark;
   }
+}
+
+:root[data-theme='escuro'] {
+  --papel: #14171b;
+  --folha: #1d2126;
+  --tinta: #e9ebe7;
+  --grafite: #9ba2a9;
+  --linha: #2c3137;
+  --tecla: #262b31;
+  --entrada: #5fc48f;
+  --negativo: #ff8a80;
+  --acc: color-mix(in oklab, var(--accent) 55%, white);
+  --sobre-acc: #14171b;
+
+  --cat-azul: #5b95e0;
+  --cat-laranja: #d96c47;
+  --cat-verde: #33a56f;
+  --cat-lilas: #9c7bdb;
+  --cat-ambar: #b8841a;
+  --cat-magenta: #d96c90;
+  --cat-ciano: #22a6b8;
+  --cat-ocre: #bc8547;
+  --cat-cinza: #8e959c;
+  color-scheme: dark;
 }
 
 *,
@@ -28,67 +89,413 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  background: var(--papel);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: 'Archivo Variable', system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.4;
+  font-variant-numeric: tabular-nums;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+a {
+  color: inherit;
 }
 
 /* Campos com no mínimo 16px evitam o zoom automático do Safari */
 input,
 select,
-textarea,
-button {
+textarea {
   font: inherit;
   font-size: max(16px, 1em);
-}
-
-.shell {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-
-.screen {
-  flex: 1;
-  padding: calc(env(safe-area-inset-top) + 16px) 16px 16px;
-}
-
-.placeholder {
-  color: var(--muted);
-}
-
-.tabbar {
-  position: sticky;
-  bottom: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  border-top: 1px solid var(--line);
-  background: var(--bg);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.tabbar a {
-  display: grid;
-  place-items: center;
-  min-height: 52px;
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 13px;
-}
-
-.tabbar a[aria-current='page'] {
-  color: var(--fg);
-  font-weight: 600;
+  color: var(--tinta);
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Estrutura ---------- */
+
+.tela {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 8px) 20px calc(var(--tabbar) + env(safe-area-inset-bottom) + 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.topo h1 {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.titulo-grande {
+  font-size: 28px;
+  font-weight: 650;
+  padding-top: 8px;
+}
+
+.secao {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.secao > h2 {
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.rotulo-grupo {
+  margin: 0 0 8px 4px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--grafite);
+}
+
+.apoio {
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--grafite);
+}
+
+.btn-icone {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--grafite);
+  border-radius: 12px;
+}
+
+.btn-icone:disabled {
+  opacity: 0.35;
+}
+
+/* Valores grandes: Archivo larga, como o valor impresso numa cédula */
+.valor-grande {
+  font-size: 52px;
+  line-height: 1.05;
+  font-weight: 850;
+  font-stretch: 125%;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.entrada {
+  color: var(--entrada);
+}
+
+.negativo {
+  color: var(--negativo);
+}
+
+/* ---------- Ícones ---------- */
+
+.icone {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.icone-cat {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  flex: none;
+}
+
+.icone-cat .icone {
+  width: 19px;
+  height: 19px;
+}
+
+.ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 4px;
+  display: inline-block;
+  flex: none;
+}
+
+/* ---------- Botões ---------- */
+
+.btn-principal,
+.btn-secundario {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn-principal {
+  background: var(--acc);
+  color: var(--sobre-acc);
+}
+
+.btn-principal:disabled {
+  background: var(--tecla);
+  color: var(--grafite);
+}
+
+.btn-secundario {
+  background: var(--folha);
+  color: var(--acc);
+  box-shadow: inset 0 0 0 1.5px var(--acc);
+}
+
+.btn-perigo {
+  color: var(--negativo);
+  font-weight: 600;
+  min-height: 44px;
+  padding: 0 4px;
+}
+
+/* Seletor de opções (Gasto/Receita, tema, etc.) */
+.alternador {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 12px;
+  background: var(--tecla);
+}
+
+.alternador button {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--grafite);
+}
+
+.alternador button[aria-pressed='true'],
+.alternador button[aria-checked='true'] {
+  background: var(--folha);
+  color: var(--tinta);
+  box-shadow: 0 0 0 1px var(--linha);
+}
+
+/* Opções em botões separados (forma de pagamento) */
+.opcoes {
+  display: flex;
+  gap: 6px;
+}
+
+.opcoes button {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--folha);
+  box-shadow: inset 0 0 0 1px var(--linha);
+}
+
+.opcoes button[aria-pressed='true'] {
+  background: var(--tinta);
+  color: var(--papel);
+  box-shadow: none;
+}
+
+.opcoes button:disabled {
+  color: var(--grafite);
+  opacity: 0.55;
+}
+
+/* ---------- Listas agrupadas (Mais, Categorias) ---------- */
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  background: var(--folha);
+  border-radius: 14px;
+  padding: 0 16px;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 50px;
+  width: 100%;
+  border-bottom: 1px solid var(--linha);
+  text-decoration: none;
+  text-align: left;
+  font-size: 16px;
+}
+
+.linha:last-child {
+  border-bottom: 0;
+}
+
+.linha .valor-lateral {
+  color: var(--grafite);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.linha-acao {
+  color: var(--acc);
+  font-weight: 600;
+}
+
+.campo-linha {
+  text-align: right;
+  border: 0;
+  background: none;
+  color: var(--grafite);
+  width: 55%;
+  min-height: 44px;
+}
+
+/* ---------- Barra de navegação ---------- */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: var(--folha);
+  border-top: 1px solid var(--linha);
+  padding: 4px 8px env(safe-area-inset-bottom);
+}
+
+.tabbar-itens {
+  max-width: 560px;
+  margin: 0 auto;
+  height: var(--tabbar);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+}
+
+.aba {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 48px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--grafite);
+  text-decoration: none;
+}
+
+.aba[aria-current='page'] {
+  color: var(--acc);
+}
+
+.aba-lancar {
+  justify-self: center;
+  width: 60px;
+  height: 52px;
+  border-radius: 18px;
+  background: var(--acc);
+  color: var(--sobre-acc);
+  display: grid;
+  place-items: center;
+}
+
+.aba-lancar .icone {
+  width: 26px;
+  height: 26px;
+  stroke-width: 2.4;
+}
+
+/* ---------- Aviso rápido (toast) ---------- */
+
+.aviso {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 20px);
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--tinta);
+  color: var(--papel);
+  font-size: 15px;
+  font-weight: 600;
+  animation: aviso-entra 180ms ease-out;
+}
+
+@keyframes aviso-entra {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
 }

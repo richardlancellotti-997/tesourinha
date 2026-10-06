@@ -4,8 +4,20 @@ export type Cents = number
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
+const num = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
 export function formatBRL(cents: Cents): string {
   return brl.format(cents / 100)
+}
+
+/** Valor sem o "R$" (o app mostra valores assim nas listas): 123456 → "1.234,56" */
+export function formatValor(cents: Cents): string {
+  return num.format(cents / 100)
+}
+
+/** Receita com "+", despesa com "−" (sinal de menos tipográfico). */
+export function formatComSinal(cents: Cents, tipo: 'despesa' | 'receita'): string {
+  return (tipo === 'receita' ? '+' : '−') + formatValor(Math.abs(cents))
 }
 
 /**

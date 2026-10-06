@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatBRL, parseBRL, splitCents } from './money'
+import { formatBRL, formatComSinal, formatValor, parseBRL, splitCents } from './money'
 
 describe('parseBRL', () => {
   it.each([
@@ -24,6 +24,17 @@ describe('formatBRL', () => {
   it('formata em reais', () => {
     // Intl usa espaço não separável entre R$ e o número
     expect(formatBRL(123456).replace(/\s/g, ' ')).toBe('R$ 1.234,56')
+  })
+})
+
+describe('formatValor e formatComSinal', () => {
+  it('sem R$, com centavos', () => {
+    expect(formatValor(123456)).toBe('1.234,56')
+    expect(formatValor(5)).toBe('0,05')
+  })
+  it('receita com +, despesa com sinal de menos', () => {
+    expect(formatComSinal(1890, 'despesa')).toBe('−18,90')
+    expect(formatComSinal(520000, 'receita')).toBe('+5.200,00')
   })
 })
 

@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Ícone provisório; o definitivo sai do plano de design -->
-  <rect width="512" height="512" fill="#1a1a1a"/>
-  <text x="256" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="260" font-weight="700" fill="#ffffff">T</text>
+  <!-- Tesourinha: "T" largo e pesado (como o valor de uma cédula) sobre o azul Caneta.
+       O desenho fica dentro da área segura de 80% para ícones mascaráveis. -->
+  <rect width="512" height="512" fill="#2442C9"/>
+  <path fill="#FFFFFF" d="M112 150h288v74H298v164h-84V224H112z"/>
+  <rect x="112" y="400" width="288" height="16" rx="8" fill="#FFFFFF" opacity="0.45"/>
 </svg>

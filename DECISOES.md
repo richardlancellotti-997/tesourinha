@@ -58,18 +58,31 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   (deploy automático a cada push na `main`).
 - Plano de design e layouts APROVADOS. Etapa 1 APROVADA para começar.
 
-### Próximo: Etapa 1 (núcleo)
+### Etapa 1 concluída (06/10/2026)
 
-1. Aplicar o visual aprovado na base: tokens de cor claro/escuro, tema automático/manual,
-   Archivo empacotada localmente (ex.: `@fontsource-variable/archivo`), barra de navegação.
-2. Categorias padrão (despesa e receita) criadas na primeira abertura; editar, renomear,
-   arquivar e criar.
-3. Tela de lançamento com teclado em centavos: gasto e receita, data editável, descrição,
-   forma de pagamento (lembra a última), categoria. Débito/Pix nesta etapa.
-4. Editar e excluir lançamentos.
-5. Início: resumo do mês (entrou, saiu, sobrou, por forma de pagamento), barras por
-   categoria, lista no formato livro-caixa, navegação entre meses.
-6. Testes das funções puras de resumo e agrupamento.
+- Visual aprovado aplicado (tokens claro/escuro, tema automático/claro/escuro, Archivo
+  empacotada via `@fontsource-variable/archivo/wdth.css`, ícone definitivo).
+- Boas-vindas na primeira abertura (nome + cor de destaque).
+- Lançar com teclado em centavos; gasto e receita; data editável; descrição; forma de
+  pagamento lembrando a última; Crédito e Voucher aparecem desabilitados até as Etapas 2 e 3.
+  Receita nesta etapa é sempre "recebida" (a receber chega na Etapa 4).
+- Editar/excluir: tocar no lançamento da lista abre a mesma tela em modo edição.
+- Início com resumo, barras (5 maiores + "Demais"), livro-caixa e navegação entre meses
+  (não avança além do mês atual por enquanto).
+- Categorias: criar, renomear, cor, ícone, "pode ser paga com voucher". Apagar uma
+  categoria com lançamentos ARQUIVA (some do lançamento, histórico mantém o nome).
+- Backup ADIANTADO da Etapa 5: exportar JSON (folha de compartilhamento do iPhone →
+  "Salvar em Arquivos") e importar (substitui tudo, com confirmação). Lembrete no Início
+  após 30 dias sem backup (ou nenhum backup com 10+ lançamentos).
+- Testado em navegador simulando iPhone (Edge headless + playwright-core no scratchpad).
+
+### Próximo: Etapa 2 (cartão de crédito)
+
+1. Ajustes do cartão (nome, dia de fechamento, dia de vencimento, limite opcional).
+2. Atribuição à fatura (funções puras + testes: dia 31, fevereiro, virada de ano, compra
+   no dia do fechamento) e a escolha "Esta fatura / Próxima" no dia do fechamento.
+3. Parcelamento no lançamento; editar/excluir parcela pergunta "só esta ou todas".
+4. Tela Cartão: fatura atual, próximas faturas, compras, registrar pagamento.
 
 ### Pendências para confirmar com o Richard
 
