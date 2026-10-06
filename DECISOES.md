@@ -51,3 +51,36 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 - Feriados nacionais são descontados (fixos + móveis: Carnaval, Sexta-feira Santa,
   Corpus Christi). Feriados estaduais/municipais ficam fora por enquanto.
 - O saldo que sobra acumula para o próximo ciclo (configurável).
+
+## Onde paramos (05/10/2026)
+
+- Etapa 0 concluída e publicada em https://richardlancellotti-997.github.io/tesourinha/
+  (deploy automático a cada push na `main`).
+- Plano de design e layouts APROVADOS. Etapa 1 APROVADA para começar.
+
+### Próximo: Etapa 1 (núcleo)
+
+1. Aplicar o visual aprovado na base: tokens de cor claro/escuro, tema automático/manual,
+   Archivo empacotada localmente (ex.: `@fontsource-variable/archivo`), barra de navegação.
+2. Categorias padrão (despesa e receita) criadas na primeira abertura; editar, renomear,
+   arquivar e criar.
+3. Tela de lançamento com teclado em centavos: gasto e receita, data editável, descrição,
+   forma de pagamento (lembra a última), categoria. Débito/Pix nesta etapa.
+4. Editar e excluir lançamentos.
+5. Início: resumo do mês (entrou, saiu, sobrou, por forma de pagamento), barras por
+   categoria, lista no formato livro-caixa, navegação entre meses.
+6. Testes das funções puras de resumo e agrupamento.
+
+### Pendências para confirmar com o Richard
+
+- Carnaval e Corpus Christi (ponto facultativo) estão FORA da conta de dias úteis do
+  voucher por padrão. Confirmar se a empresa dele funciona nesses dias.
+- Questões ainda abertas do briefing (seção 10): dados reais do cartão e do voucher
+  (preenchidos pelo próprio usuário em Ajustes); receitas recorrentes (salário) na V1;
+  preferências visuais da namorada.
+
+### Ambiente
+
+- Node 24 e Git portáteis em `%USERPROFILE%\Ferramentas` (no PATH do usuário).
+  Se o VS Code não encontrar `git`/`npm`, fechar o VS Code por completo e reabrir.
+- Comandos: `npm run dev` (local), `npm test`, `npm run build`.
