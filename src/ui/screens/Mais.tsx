@@ -4,6 +4,7 @@ import { BackupInvalido, gerarBackup, lerBackup, nomeArquivoBackup, restaurarBac
 import { db, nowISO } from '../../db/db'
 import { cartaoPrincipal, PERFIL_ID, salvarPerfil, VOUCHER_ID } from '../../db/repo'
 import { formatValor } from '../../domain/money'
+import { valorNaData } from '../../domain/recurrence'
 import type { Theme } from '../../db/types'
 import { diffDays, today } from '../../domain/dates'
 import { href } from '../../router'
@@ -22,6 +23,10 @@ export function Mais() {
   const totalCategorias = useLiveQuery(() => db.categories.filter((c) => !c.arquivada).count(), [], 0)
   const cartao = useLiveQuery(() => cartaoPrincipal(), [])
   const voucher = useLiveQuery(() => db.voucherConfig.get(VOUCHER_ID), [])
+  const recs = useLiveQuery(() => db.recurrences.toArray(), [], [])
+  const previstas = useLiveQuery(() => db.incomeExpected.where('status').equals('prevista').toArray(), [], [])
+  const totalFixo = recs.filter((r) => r.ativa && r.tipo === 'despesa').reduce((s, r) => s + valorNaData(r, today()), 0)
+  const totalAReceber = previstas.reduce((s, p) => s + p.valor, 0)
   const [nome, setNome] = useState('')
   const arquivo = useRef<HTMLInputElement>(null)
 
@@ -89,6 +94,18 @@ export function Mais() {
       <h1 class="titulo-grande">Mais</h1>
 
       <div class="grupo">
+        <a class="linha" href={href('/assinaturas')}>
+          <span>Assinaturas e contas fixas</span>
+          <span class="valor-lateral">
+            {totalFixo ? formatValor(totalFixo) : ''} <Icon nome="avancar" size={18} />
+          </span>
+        </a>
+        <a class="linha" href={href('/receitas')}>
+          <span>Receitas</span>
+          <span class="valor-lateral">
+            {totalAReceber ? `${formatValor(totalAReceber)} a receber` : ''} <Icon nome="avancar" size={18} />
+          </span>
+        </a>
         <a class="linha" href={href('/categorias')}>
           <span>Categorias</span>
           <span class="valor-lateral">

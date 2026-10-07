@@ -6,6 +6,13 @@ import {
   apagarCategoria,
   cartaoPrincipal,
   desfazerPagamentos,
+  encerrarRecorrencia,
+  garantirRecorrencias,
+  pausarRecorrencia,
+  projetarRecorrencias,
+  receberPrevista,
+  salvarReceitaPrevista,
+  salvarRecorrencia,
   estadoDoVoucher,
   garantirCreditosVoucher,
   excluirLancamentos,
@@ -193,6 +200,104 @@ describe('voucher', () => {
     await salvarVoucher({ ...cfg, acumulaSaldo: false }, '2026-10-05', 50000)
     await garantirCreditosVoucher('2026-10-21')
     expect((await estadoDoVoucher('2026-10-21'))?.saldo).toBe(110000)
+  })
+})
+
+describe('recorrências', () => {
+  const assinatura = {
+    nome: 'Música',
+    tipo: 'despesa' as const,
+    valor: 2190,
+    diaDoMes: 8,
+    formaPagamento: 'debito_pix' as const,
+    categoriaId: 'cat-assinaturas',
+  }
+  const daRec = (id: string) => db.transactions.where('recorrenciaId').equals(id).sortBy('data')
+
+  it('lança no dia, uma vez só, e recupera os meses em que o app ficou fechado', async () => {
+    const id = await salvarRecorrencia(assinatura, '2026-10-07')
+    expect(await daRec(id)).toHaveLength(0) // dia 8 ainda não chegou
+    await garantirRecorrencias('2026-10-08')
+    await garantirRecorrencias('2026-10-08')
+    expect((await daRec(id)).map((t) => [t.data, t.valor, t.descricao])).toEqual([['2026-10-08', 2190, 'Música']])
+    await garantirRecorrencias('2027-01-20')
+    expect((await daRec(id)).map((t) => t.data)).toEqual(['2026-10-08', '2026-11-08', '2026-12-08', '2027-01-08'])
+  })
+
+  it('se o dia é hoje, já lança ao cadastrar', async () => {
+    const id = await salvarRecorrencia({ ...assinatura, diaDoMes: 7 }, '2026-10-07')
+    expect(await daRec(id)).toHaveLength(1)
+  })
+
+  it('mudar o valor vale dali em diante; o já lançado não muda', async () => {
+    const id = await salvarRecorrencia(assinatura, '2026-10-07')
+    await garantirRecorrencias('2026-10-08')
+    await salvarRecorrencia({ ...assinatura, valor: 2490 }, '2026-10-20', id)
+    await garantirRecorrencias('2026-11-08')
+    expect((await daRec(id)).map((t) => t.valor)).toEqual([2190, 2490])
+  })
+
+  it('pausada não lança; retomada segue das próximas datas, sem as que passaram', async () => {
+    const id = await salvarRecorrencia(assinatura, '2026-10-07')
+    await pausarRecorrencia(id, true, '2026-10-07')
+    await garantirRecorrencias('2026-12-20')
+    expect(await daRec(id)).toHaveLength(0)
+    await pausarRecorrencia(id, false, '2026-12-20')
+    await garantirRecorrencias('2027-01-08')
+    expect((await daRec(id)).map((t) => t.data)).toEqual(['2027-01-08'])
+  })
+
+  it('encerrada não lança mais e some das projeções', async () => {
+    const id = await salvarRecorrencia(assinatura, '2026-10-07')
+    await encerrarRecorrencia(id, '2026-10-09')
+    await garantirRecorrencias('2027-01-20')
+    expect(await daRec(id)).toHaveLength(1)
+    expect(await projetarRecorrencias('2027-01-20', '2027-06-30')).toHaveLength(0)
+  })
+
+  it('no crédito, no dia do fechamento usa a escolha do cadastro e conta no mês do vencimento', async () => {
+    const cardId = await salvarCartao({ nome: 'C', diaFechamento: 14, diaVencimento: 21 })
+    const id = await salvarRecorrencia(
+      { ...assinatura, diaDoMes: 14, formaPagamento: 'credito', cardId, escolhaFechamento: 'proxima' },
+      '2026-10-07',
+    )
+    await garantirRecorrencias('2026-10-14')
+    const [tx] = await daRec(id)
+    expect([tx.faturaRef, tx.mesBalanco, tx.cardId]).toEqual(['2026-11', '2026-11', cardId])
+  })
+
+  it('projeta as próximas ocorrências sem gravar', async () => {
+    await salvarRecorrencia(assinatura, '2026-10-07')
+    const prev = await projetarRecorrencias('2026-10-07', '2026-12-31')
+    expect(prev.map((t) => t.data)).toEqual(['2026-10-08', '2026-11-08', '2026-12-08'])
+    expect(await db.transactions.count()).toBe(0)
+  })
+
+  it('salário entra sozinho como receita', async () => {
+    const id = await salvarRecorrencia(
+      { ...assinatura, nome: 'Salário', tipo: 'receita', valor: 520000, diaDoMes: 5, categoriaId: 'cat-salario' },
+      '2026-10-07',
+    )
+    await garantirRecorrencias('2026-11-05')
+    expect((await daRec(id)).map((t) => [t.tipo, t.valor, t.data, t.mesBalanco])).toEqual([['receita', 520000, '2026-11-05', '2026-11']])
+  })
+})
+
+describe('receitas a receber', () => {
+  it('prevista não conta; ao receber vira receita com a data de hoje', async () => {
+    const id = await salvarReceitaPrevista({
+      valor: 80000,
+      dataPrevista: '2026-10-10',
+      categoriaId: 'cat-servicos',
+      descricao: 'Site',
+      devedor: 'Ana',
+    })
+    expect(await db.transactions.count()).toBe(0)
+    await receberPrevista(id, '2026-10-12')
+    await receberPrevista(id, '2026-10-12') // não duplica
+    const txs = await db.transactions.toArray()
+    expect(txs.map((t) => [t.tipo, t.valor, t.data, t.descricao])).toEqual([['receita', 80000, '2026-10-12', 'Site, Ana']])
+    expect((await db.incomeExpected.get(id))?.status).toBe('recebida')
   })
 })
 

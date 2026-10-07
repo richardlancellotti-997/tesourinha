@@ -81,8 +81,13 @@ export interface Recurrence extends BaseRecord {
   cardId?: string
   inicio: LocalDate
   fim?: LocalDate
+  /** false = pausada (não lança nada até ser retomada) */
   ativa: boolean
   historicoDeValores: RecurrenceValue[]
+  /** No crédito, quando a cobrança cai no dia do fechamento: escolhida no cadastro */
+  escolhaFechamento?: 'esta' | 'proxima'
+  /** Já foram lançadas todas as ocorrências até esta data (inclusive) */
+  geradoAte: LocalDate
 }
 
 export interface VoucherConfig extends BaseRecord {

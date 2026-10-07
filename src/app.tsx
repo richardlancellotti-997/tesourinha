@@ -6,7 +6,10 @@ import type { Kind, PaymentMethod } from './db/types'
 import { useRota } from './router'
 import { useAviso } from './ui/aviso'
 import { Folha } from './ui/folha'
+import { Assinaturas } from './ui/screens/Assinaturas'
 import { BoasVindas } from './ui/screens/BoasVindas'
+import { Receitas } from './ui/screens/Receitas'
+import { Recorrencia } from './ui/screens/Recorrencia'
 import { Cartao } from './ui/screens/Cartao'
 import { CartaoAjustes } from './ui/screens/CartaoAjustes'
 import { Categorias } from './ui/screens/Categorias'
@@ -55,10 +58,12 @@ export function App() {
       // Lançar ocupa a tela toda, sem a barra de navegação
       conteudo = (
         <Lancar
-          key={`${param ?? 'novo'}-${rota.params.get('parcela') ?? ''}`}
+          key={rota.params.toString() + (param ?? 'novo')}
           id={param}
           soParcela={rota.params.get('parcela') === '1'}
           formaInicial={(rota.params.get('forma') as PaymentMethod) ?? undefined}
+          previstaId={rota.params.get('prevista') ?? undefined}
+          situacaoInicial={rota.params.get('situacao') === 'prevista' ? 'prevista' : undefined}
           tipoInicial={(rota.params.get('tipo') as Kind) ?? undefined}
         />
       )
@@ -77,6 +82,24 @@ export function App() {
       break
     case 'categorias':
       conteudo = <Categorias />
+      aba = 'mais'
+      break
+    case 'assinaturas':
+      conteudo = <Assinaturas />
+      aba = 'mais'
+      break
+    case 'recorrencia':
+      conteudo = (
+        <Recorrencia
+          key={param}
+          id={param === 'nova' ? undefined : param}
+          tipoInicial={rota.params.get('tipo') === 'receita' ? 'receita' : undefined}
+        />
+      )
+      aba = 'mais'
+      break
+    case 'receitas':
+      conteudo = <Receitas />
       aba = 'mais'
       break
     default:

@@ -660,6 +660,91 @@
   accent-color: var(--acc);
 }
 
+/* ---------- Assinaturas e Receitas ---------- */
+
+.lanc.lanc-rec {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  column-gap: 10px;
+}
+
+.lanc-rec.inativa .lanc-texto,
+.lanc-rec.inativa .lanc-valor {
+  opacity: 0.6;
+}
+
+.quando {
+  font-size: 13px;
+  line-height: 1.1;
+  font-weight: 650;
+  text-align: center;
+  color: var(--grafite);
+}
+
+.quando b {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  font-stretch: 125%;
+  color: var(--tinta);
+}
+
+.rotulo-secundario {
+  font-size: 17px !important;
+  color: var(--grafite);
+}
+
+.acoes-rec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-receita {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.item-receita-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  min-height: 44px;
+}
+
+.item-receita-rodape {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.atrasada {
+  font-weight: 650;
+}
+
+.btn-receber {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 650;
+  background: var(--folha);
+  box-shadow: inset 0 0 0 1px var(--linha);
+}
+
+.btn-receber.forte {
+  background: var(--tinta);
+  color: var(--papel);
+  box-shadow: none;
+}
+
 .lanc-valor.adiado {
   color: var(--grafite);
   font-weight: 500;

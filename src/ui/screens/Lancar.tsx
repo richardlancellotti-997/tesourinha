@@ -5,13 +5,15 @@ import {
   cartaoPrincipal,
   estadoDoVoucher,
   excluirLancamentos,
+  excluirReceitaPrevista,
+  salvarReceitaPrevista,
   type EstadoVoucher,
   lancamentosDaCompra,
   PERFIL_ID,
   salvarCompra,
   salvarParcela,
 } from '../../db/repo'
-import type { Card, Category, Kind, PaymentMethod, Transaction } from '../../db/types'
+import type { Card, Category, IncomeExpected, Kind, PaymentMethod, Transaction } from '../../db/types'
 import { addMonths, diaMes, nomeMes, rotuloData, today, type YearMonth } from '../../domain/dates'
 import { faturaDaCompra, faturaPelaData, parcelar, vencimentoDe, type EscolhaFatura } from '../../domain/invoice'
 import { centavosParaDigitos, digitosParaCentavos, pressionar, type Tecla } from '../../domain/keypad'
@@ -48,11 +50,16 @@ export function Lancar({
   tipoInicial,
   formaInicial,
   soParcela,
+  previstaId,
+  situacaoInicial,
 }: {
   id?: string
   tipoInicial?: Kind
   formaInicial?: PaymentMethod
   soParcela?: boolean
+  /** Edita uma receita a receber: /lancar?prevista=<id> */
+  previstaId?: string
+  situacaoInicial?: 'recebida' | 'prevista'
 }) {
   const hoje = today()
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
@@ -71,8 +78,27 @@ export function Lancar({
   // undefined = carregando; [] = não encontrado
   const [originais, setOriginais] = useState<Transaction[] | undefined>(id ? undefined : [])
   const [salvando, setSalvando] = useState(false)
+  // Receita: já recebida (entra no balanço) ou a receber (fica em "A receber")
+  const [situacao, setSituacao] = useState<'recebida' | 'prevista'>(previstaId ? 'prevista' : (situacaoInicial ?? 'recebida'))
+  const [devedor, setDevedor] = useState('')
+  const [prevista, setPrevista] = useState<IncomeExpected | null | undefined>(previstaId ? undefined : null)
 
   const modo: 'novo' | 'compra' | 'parcela' = !id ? 'novo' : soParcela ? 'parcela' : 'compra'
+  const ehPrevista = tipo === 'receita' && situacao === 'prevista'
+
+  useEffect(() => {
+    if (!previstaId) return
+    db.incomeExpected.get(previstaId).then((p) => {
+      setPrevista(p ?? null)
+      if (!p) return
+      setTipo('receita')
+      setDigitos(centavosParaDigitos(p.valor))
+      setData(p.dataPrevista)
+      setDescricao(p.descricao ?? '')
+      setDevedor(p.devedor ?? '')
+      setCatId(p.categoriaId)
+    })
+  }, [previstaId])
 
   useEffect(() => {
     if (!id) return
@@ -138,7 +164,9 @@ export function Lancar({
 
   let rotuloSalvar = pendencia
   if (!rotuloSalvar) {
-    if (modo === 'parcela') rotuloSalvar = 'Salvar parcela'
+    if (previstaId) rotuloSalvar = 'Salvar alterações'
+    else if (ehPrevista) rotuloSalvar = 'Salvar receita a receber'
+    else if (modo === 'parcela') rotuloSalvar = 'Salvar parcela'
     else if (modo === 'compra') rotuloSalvar = 'Salvar alterações'
     else rotuloSalvar = tipo === 'despesa' ? 'Salvar gasto' : 'Salvar receita'
   }
@@ -157,7 +185,10 @@ export function Lancar({
     if (pendencia || salvando) return
     setSalvando(true)
     try {
-      if (modo === 'parcela') {
+      if (ehPrevista) {
+        await salvarReceitaPrevista({ valor, dataPrevista: data, categoriaId: catId!, descricao, devedor }, previstaId)
+        avisar(previstaId ? 'Alterações salvas' : 'Receita a receber salva')
+      } else if (modo === 'parcela') {
         await salvarParcela(id!, { valor, categoriaId: catId!, descricao })
         avisar('Parcela salva')
       } else {
@@ -185,6 +216,12 @@ export function Lancar({
   }
 
   async function excluir() {
+    if (previstaId) {
+      if (!confirm('Excluir esta receita a receber?')) return
+      await excluirReceitaPrevista(previstaId)
+      avisar('Receita a receber excluída')
+      return voltar()
+    }
     if (!originais?.length) return
     const n = originais.length
     const pergunta =
@@ -223,6 +260,17 @@ export function Lancar({
     )
   }
   if (id && originais === undefined) return null
+  if (previstaId && prevista === undefined) return null
+  if (previstaId && prevista === null) {
+    return (
+      <main class="tela">
+        <p>Esta receita a receber não existe mais.</p>
+        <button class="btn-principal" onClick={voltar}>
+          Voltar
+        </button>
+      </main>
+    )
+  }
 
   // Texto das parcelas: "3x de 200,00" ou "1x de 333,34 e 2x de 333,33"
   const divisao = parcelas > 1 && valor >= parcelas ? parcelar(valor, parcelas, '2000-01') : null
@@ -243,6 +291,8 @@ export function Lancar({
           <h1 class="lancar-titulo">
             Parcela {original?.parcelaNumero} de {original?.parcelaTotal}
           </h1>
+        ) : previstaId ? (
+          <h1 class="lancar-titulo">A receber</h1>
         ) : (
           <div class="alternador" role="group" aria-label="Tipo de lançamento">
             <button aria-pressed={tipo === 'despesa'} onClick={() => trocarTipo('despesa')}>
@@ -253,7 +303,7 @@ export function Lancar({
             </button>
           </div>
         )}
-        {id ? (
+        {id || previstaId ? (
           <button class="btn-perigo lancar-excluir" onClick={excluir}>
             Excluir
           </button>
@@ -297,6 +347,37 @@ export function Lancar({
             />
           </label>
         </div>
+
+        {tipo === 'receita' && modo === 'novo' && !previstaId && (
+          <div class="opcoes" role="group" aria-label="Situação da receita">
+            <button aria-pressed={situacao === 'recebida'} onClick={() => setSituacao('recebida')}>
+              Já recebi
+            </button>
+            <button aria-pressed={situacao === 'prevista'} onClick={() => setSituacao('prevista')}>
+              Vou receber
+            </button>
+          </div>
+        )}
+
+        {ehPrevista && (
+          <>
+            <label class="campo-texto-rotulo">
+              <span class="sr-only">Quem vai pagar</span>
+              <input
+                class="campo-texto"
+                placeholder="Quem vai pagar (opcional)"
+                value={devedor}
+                maxLength={40}
+                enterKeyHint="done"
+                onInput={(e) => setDevedor(e.currentTarget.value)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+              />
+            </label>
+            <p class="apoio info-fatura">
+              A data é quando você espera receber. Fica em "A receber" e só entra no balanço quando você marcar como recebida.
+            </p>
+          </>
+        )}
 
         {tipo === 'despesa' && modo !== 'parcela' && (
           <div class="opcoes" role="group" aria-label="Forma de pagamento">

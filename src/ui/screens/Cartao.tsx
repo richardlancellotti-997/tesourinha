@@ -2,7 +2,7 @@ import Dexie from 'dexie'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'preact/hooks'
 import { db } from '../../db/db'
-import { cartaoPrincipal, desfazerPagamentos, registrarPagamento } from '../../db/repo'
+import { cartaoPrincipal, desfazerPagamentos, projetarRecorrencias, registrarPagamento } from '../../db/repo'
 import type { Card, Category, InvoicePayment, Transaction } from '../../db/types'
 import { addMonths, diaMes, diaMesSemana, nomeMes, today, type YearMonth } from '../../domain/dates'
 import {
@@ -13,7 +13,7 @@ import {
   type SituacaoFatura,
 } from '../../domain/invoice'
 import { formatValor } from '../../domain/money'
-import { href } from '../../router'
+import { href, navegar } from '../../router'
 import { abrirParcelaOuCompra } from '../abrirLancamento'
 import { avisar } from '../aviso'
 import { Icon } from '../Icon'
@@ -43,6 +43,12 @@ export function Cartao() {
     [] as InvoicePayment[],
   )
   const categorias = useLiveQuery(() => db.categories.toArray(), [], [] as Category[])
+  // Assinaturas no crédito que ainda vão cair (não gravadas)
+  const projecoes = useLiveQuery(
+    () => projetarRecorrencias(hoje, `${addMonths(hoje.slice(0, 7), 14)}-28`),
+    [hoje],
+    [] as Transaction[],
+  )
   const [refEscolhida, setRef] = useState<YearMonth | null>(faturaLembrada)
   useEffect(() => {
     faturaLembrada = refEscolhida
@@ -68,14 +74,23 @@ export function Cartao() {
   const pagos = new Map<YearMonth, number>()
   for (const p of pagamentos) pagos.set(p.faturaRef, (pagos.get(p.faturaRef) ?? 0) + p.valorPago)
 
-  const total = totais.get(ref) ?? 0
+  const previstas = projecoes.filter((t) => t.formaPagamento === 'credito' && t.cardId === cartao.id)
+  const previstoPorRef = new Map<YearMonth, number>()
+  for (const t of previstas) previstoPorRef.set(t.faturaRef!, (previstoPorRef.get(t.faturaRef!) ?? 0) + t.valor)
+
+  const totalReal = totais.get(ref) ?? 0
+  const totalPrevisto = previstoPorRef.get(ref) ?? 0
+  const total = totalReal + totalPrevisto
   const pago = pagos.get(ref) ?? 0
-  const quitada = total > 0 && pago >= total
-  const situacao = situacaoDaFatura(ref, cartao, hoje, total, pago)
+  const quitada = totalReal > 0 && pago >= totalReal
+  const situacao = situacaoDaFatura(ref, cartao, hoje, totalReal, pago)
   const porId = new Map(categorias.map((c) => [c.id, c]))
-  const compras = txs
-    .filter((t) => t.faturaRef === ref)
-    .sort((a, b) => (a.data === b.data ? (a.createdAt < b.createdAt ? 1 : -1) : a.data < b.data ? 1 : -1))
+  const ordem = (a: Transaction, b: Transaction) =>
+    a.data === b.data ? (a.createdAt < b.createdAt ? 1 : -1) : a.data < b.data ? 1 : -1
+  const compras = [
+    ...previstas.filter((t) => t.faturaRef === ref).map((t) => ({ ...t, prevista: true })),
+    ...txs.filter((t) => t.faturaRef === ref).map((t) => ({ ...t, prevista: false })),
+  ].sort(ordem)
 
   // Limite: tudo que ainda não foi pago, em qualquer fatura
   const emAberto = (r: YearMonth) => Math.max(0, (totais.get(r) ?? 0) - (pagos.get(r) ?? 0))
@@ -84,7 +99,9 @@ export function Cartao() {
   const demais = comprometido - destaFatura
   const livre = cartao.limite ? cartao.limite - comprometido : 0
 
-  const proximas = [1, 2, 3].map((i) => addMonths(ref, i)).map((r) => ({ ref: r, total: totais.get(r) ?? 0 }))
+  const proximas = [1, 2, 3]
+    .map((i) => addMonths(ref, i))
+    .map((r) => ({ ref: r, total: (totais.get(r) ?? 0) + (previstoPorRef.get(r) ?? 0) }))
   const maiorProxima = Math.max(...proximas.map((p) => p.total))
   const ultimoPagamento = pagamentos.filter((p) => p.faturaRef === ref).sort((a, b) => (a.dataPagamento < b.dataPagamento ? 1 : -1))[0]
 
@@ -93,10 +110,10 @@ export function Cartao() {
   async function pagar() {
     const pergunta =
       situacao === 'aberta'
-        ? `A fatura ainda não fechou. Registrar o pagamento de ${formatValor(total - pago)} hoje?`
-        : `Registrar o pagamento de ${formatValor(total - pago)} hoje?`
+        ? `A fatura ainda não fechou. Registrar o pagamento de ${formatValor(totalReal - pago)} hoje?`
+        : `Registrar o pagamento de ${formatValor(totalReal - pago)} hoje?`
     if (!confirm(pergunta)) return
-    await registrarPagamento(cartao!.id, ref, total - pago, hoje)
+    await registrarPagamento(cartao!.id, ref, totalReal - pago, hoje)
     avisar('Pagamento registrado')
   }
 
@@ -133,7 +150,12 @@ export function Cartao() {
             </button>
           )}
         </div>
-        <div class="valor-grande">{formatValor(total)}</div>
+        <div>
+          <div class="valor-grande">{formatValor(total)}</div>
+          {totalPrevisto > 0 && (
+            <p class="apoio-forte texto-curto">Inclui {formatValor(totalPrevisto)} de assinaturas que ainda vão cair.</p>
+          )}
+        </div>
         <div class="resumo-numeros">
           <div>
             <div class="apoio">Fecha em</div>
@@ -179,7 +201,7 @@ export function Cartao() {
           </button>
         </div>
       ) : (
-        total > 0 &&
+        totalReal > 0 &&
         ref <= atual && (
           <button class="btn-secundario" onClick={pagar}>
             Registrar pagamento
@@ -211,7 +233,11 @@ export function Cartao() {
             {compras.map((t) => {
               const cat = porId.get(t.categoriaId)
               return (
-                <button key={t.id} class="lanc lanc-botao" onClick={() => abrirCompra(t)}>
+                <button
+                  key={t.id}
+                  class="lanc lanc-botao"
+                  onClick={() => (t.prevista ? navegar(`/recorrencia/${t.recorrenciaId}`) : abrirCompra(t))}
+                >
                   <span class="lanc-texto">
                     <span class="lanc-principal">
                       {t.descricao || cat?.nome || 'Sem categoria'}
@@ -220,13 +246,14 @@ export function Cartao() {
                           {t.parcelaNumero} de {t.parcelaTotal}
                         </span>
                       )}
+                      {t.prevista && <span class="selo-parcela">prevista</span>}
                     </span>
                     <span class="apoio">
-                      {diaMes(t.data)}
+                      {t.prevista ? `Cai em ${diaMes(t.data)}` : diaMes(t.data)}
                       {t.descricao && cat ? `, ${cat.nome.toLowerCase()}` : ''}
                     </span>
                   </span>
-                  <span class="lanc-valor">{formatValor(t.valor)}</span>
+                  <span class={`lanc-valor ${t.prevista ? 'adiado' : ''}`}>{formatValor(t.valor)}</span>
                 </button>
               )
             })}

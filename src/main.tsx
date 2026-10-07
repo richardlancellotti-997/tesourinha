@@ -1,7 +1,7 @@
 import { render } from 'preact'
 import { App } from './app'
 import { requestPersistentStorage } from './db/db'
-import { garantirCreditosVoucher, garantirDadosIniciais } from './db/repo'
+import { garantirCreditosVoucher, garantirDadosIniciais, garantirRecorrencias } from './db/repo'
 import { today } from './domain/dates'
 import { aplicarTemaInicial } from './ui/theme'
 import './styles/base.css'
@@ -14,7 +14,7 @@ for (const evento of ['gesturestart', 'gesturechange', 'gestureend']) {
   document.addEventListener(evento, (e) => e.preventDefault(), { passive: false })
 }
 
-Promise.all([garantirDadosIniciais(), garantirCreditosVoucher(today())]).finally(() => {
+Promise.all([garantirDadosIniciais(), garantirCreditosVoucher(today()), garantirRecorrencias(today())]).finally(() => {
   render(<App />, document.getElementById('app')!)
 })
 

@@ -66,10 +66,9 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 
 - Publicado em https://richardlancellotti-997.github.io/tesourinha/ (deploy automático a
   cada push na `main`). Banco no esquema 2.
-- Etapas 0, 1, 2 e 3 CONCLUÍDAS e testadas pelo Richard no iPhone (último ajuste: valores
-  com vírgula e dias alinhados nos ajustes — publicado, falta ele confirmar no aparelho).
-- PRÓXIMO: Etapa 4 (ver "Próximo: Etapa 4" no fim). Antes de começar, confirmar com o
-  Richard se o salário fixo entra como receita recorrente na V1 (recomendação: sim).
+- Etapas 0 a 3 CONCLUÍDAS e testadas pelo Richard no iPhone. Etapa 4 concluída em
+  07/10/2026 e publicada, aguardando o teste dele.
+- PRÓXIMO: Etapa 5 (ver "Próximo: Etapa 5").
 - Depois: Etapa 5 (acabamento: personalização já existe; revisar ícone, estados vazios,
   CSV opcional no backup, testes no iPhone real) e itens pós-V1 do briefing.
 - Testes de navegador (Edge headless + playwright-core) ficam no scratchpad da sessão,
@@ -168,7 +167,37 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   direita com seta; o `<select>` fica invisível por cima (o Safari ignora o alinhamento
   de select).
 
-### Próximo: Etapa 4 (recorrências e receitas a receber)
+### Etapa 4 concluída (07/10/2026)
+
+- Recorrências (Mais → Assinaturas e contas fixas): gasto (débito/Pix, crédito ou voucher)
+  ou receita fixa (salário). Nome, valor, dia do mês, forma, categoria.
+- Lançamento automático: ao abrir o app (ou a tela), cada ocorrência que já chegou é
+  gravada como lançamento normal (descrição = nome, `recorrenciaId`), inclusive as dos
+  dias em que o app ficou fechado. Cadastrar no próprio dia já lança hoje.
+- Salário entra SOZINHO como recebido (escolha do Richard); se mudar, edita o do mês.
+- Crédito no dia do fechamento: a escolha "na que fecha / na seguinte" é feita UMA vez
+  no cadastro e vale todo mês (escolha do Richard). Sem escolha gravada, usa "seguinte".
+- Mudar o valor vale de hoje em diante (`historicoDeValores`); lançados não mudam.
+  Pausar não lança nada; retomar segue das próximas datas (não lança as do período
+  pausado). Encerrar para de lançar e mantém o histórico.
+- Projeções (não gravadas): meses futuros do Início entram no balanço previsto e na
+  seção "Previstos"; no mês atual, cartão "Ainda este mês" com contas fixas e receitas
+  fixas que ainda vão cair; no Cartão, assinaturas futuras aparecem nas faturas como
+  "prevista" (somam no total e nas próximas faturas, não no pagamento nem no limite).
+- Receitas a receber (Mais → Receitas, ou Lançar → Receita → "Vou receber"): valor, data
+  esperada, descrição, quem vai pagar. Fora do balanço até "Marcar como recebida", que
+  gera a receita com a data de HOJE. Atrasadas em vermelho. Tocar abre Editar/Excluir.
+  Início mostra o cartão "A receber".
+
+### Próximo: Etapa 5 (acabamento)
+
+1. Revisão geral no iPhone com uso real (estados vazios, textos, acessibilidade).
+2. Backup: CSV opcional para planilha; conferir o fluxo "Salvar em Arquivos".
+3. Pequenas melhorias que surgirem nos testes.
+4. Depois: itens pós-V1 do briefing (orçamento por categoria, metas/caixinhas, divisão
+   da renda, insights, importação de extratos, múltiplos cartões na interface).
+
+### (Concluído) Etapa 4 — roteiro original
 
 1. Assinaturas e contas fixas: cadastro (nome, valor, dia, forma, categoria), lançamento
    automático no dia, ajuste de valor valendo dali em diante (histórico de valores),
@@ -185,10 +214,7 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 
 ### Pendências para confirmar com o Richard
 
-- Salário fixo como receita recorrente já na V1 (perguntado em 06/10, sem resposta).
-- Recorrência no crédito que cai no dia do fechamento: perguntar ou usar uma regra
-  fixa (ex.: sempre "Próxima")? Decidir ao desenhar a Etapa 4.
-- Confirmar no iPhone os campos de valor com vírgula (publicado em 06/10).
+- Testar a Etapa 4 no iPhone.
 - Preferências visuais da namorada (briefing, seção 10).
 
 ### Ambiente

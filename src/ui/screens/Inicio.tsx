@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'preact/hooks'
 import { db } from '../../db/db'
-import { PERFIL_ID } from '../../db/repo'
+import { PERFIL_ID, projetarRecorrencias } from '../../db/repo'
 import type { Category, PaymentMethod, Transaction } from '../../db/types'
 import { addMonths, diaMes, diffDays, nomeMes, tituloMes, today, yearMonthOf } from '../../domain/dates'
 import { formatComSinal, formatValor } from '../../domain/money'
@@ -36,12 +36,28 @@ export function Inicio() {
   const categorias = useLiveQuery(() => db.categories.toArray(), [], [] as Category[])
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const totalLancamentos = useLiveQuery(() => db.transactions.count(), [], 0)
+  const aReceber = useLiveQuery(() => db.incomeExpected.where('status').equals('prevista').sortBy('dataPrevista'), [], [])
+  // Recorrências que ainda vão cair (não gravadas): previstas do mês
+  const projecoes = useLiveQuery(
+    () => (ym >= mesAtual ? projetarRecorrencias(hoje, `${ym}-31`) : Promise.resolve([] as Transaction[])),
+    [ym, hoje],
+    [] as Transaction[],
+  )
 
   if (!doMes || !noBalanco) return null
 
   const porId = new Map(categorias.map((c) => [c.id, c]))
   const nomeDe = (t: Transaction) => t.descricao || porId.get(t.categoriaId)?.nome || 'Sem categoria'
-  const r = resumoDoMes(noBalanco, ym)
+  const previstasDoMes = projecoes.filter((t) => t.mesBalanco === ym).sort((a, b) => (a.data < b.data ? -1 : 1))
+  const futuro = ym > mesAtual
+  // Mês futuro: o balanço já inclui as recorrências previstas. Mês atual: só o realizado.
+  const r = resumoDoMes(futuro ? [...noBalanco, ...previstasDoMes] : noBalanco, ym)
+  const aindaGastos = previstasDoMes
+    .filter((t) => t.tipo === 'despesa' && t.formaPagamento !== 'voucher')
+    .reduce((s, t) => s + t.valor, 0)
+  const aindaReceitas = previstasDoMes.filter((t) => t.tipo === 'receita').reduce((s, t) => s + t.valor, 0)
+  const totalAReceber = aReceber.reduce((s, p) => s + p.valor, 0)
+  const atrasadas = aReceber.filter((p) => p.dataPrevista < hoje).length
   const barras = principaisCategorias(r.porCategoria)
   const maior = barras.reduce((m, b) => Math.max(m, b.total), 0)
   const temParcelas = barras.some((b) => b.parcelado > 0)
@@ -104,6 +120,39 @@ export function Inicio() {
           </div>
         )}
       </section>
+
+      {ym === mesAtual && (aindaGastos > 0 || aindaReceitas > 0) && (
+        <a class="lembrete" href={href('/assinaturas')}>
+          <span>
+            <span class="lembrete-titulo">Ainda este mês</span>
+            <br />
+            <span class="apoio">
+              {[
+                aindaGastos ? `${formatComSinal(aindaGastos, 'despesa')} em contas fixas` : '',
+                aindaReceitas ? `${formatComSinal(aindaReceitas, 'receita')} de receitas fixas` : '',
+              ]
+                .filter(Boolean)
+                .join(', ')}
+            </span>
+          </span>
+          <Icon nome="avancar" />
+        </a>
+      )}
+
+      {aReceber.length > 0 && (
+        <a class="lembrete" href={href('/receitas')}>
+          <span>
+            <span class="lembrete-titulo">A receber: {formatValor(totalAReceber)}</span>
+            <br />
+            <span class={`apoio ${atrasadas ? 'negativo' : ''}`}>
+              {atrasadas
+                ? `${atrasadas} ${atrasadas === 1 ? 'atrasada' : 'atrasadas'}`
+                : `${aReceber.length} ${aReceber.length === 1 ? 'receita prevista' : 'receitas previstas'}, a próxima em ${diaMes(aReceber[0].dataPrevista)}`}
+            </span>
+          </span>
+          <Icon nome="avancar" />
+        </a>
+      )}
 
       {lembrarBackup && (
         <a class="lembrete" href={href('/mais')}>
@@ -193,6 +242,28 @@ export function Inicio() {
           </div>
         )}
       </section>
+
+      {futuro && previstasDoMes.length > 0 && (
+        <section class="secao">
+          <h2>Previstos</h2>
+          <div>
+            {previstasDoMes.map((t) => (
+              <a key={t.id} class="lanc" href={href(`/recorrencia/${t.recorrenciaId}`)}>
+                <span class="lanc-texto">
+                  <span class="lanc-principal">
+                    {nomeDe(t)}
+                    <span class="selo-parcela">todo mês</span>
+                  </span>
+                  <span class="apoio">
+                    {diaMes(t.data)}, {t.tipo === 'receita' ? 'receita' : NOME_FORMA[t.formaPagamento].toLowerCase()}
+                  </span>
+                </span>
+                <span class={`lanc-valor ${t.tipo === 'receita' ? 'entrada' : ''}`}>{formatComSinal(t.valor, t.tipo)}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {anteriores.length > 0 && (
         <section class="secao">
