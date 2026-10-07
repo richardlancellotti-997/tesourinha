@@ -18,6 +18,33 @@ const TEMAS: { id: Theme; nome: string }[] = [
   { id: 'escuro', nome: 'Escuro' },
 ]
 
+const DIAS_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const DIAS_LONGOS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
+
+/** [F,T,T,T,T,T,F] → "Segunda a sexta"; dias soltos → "Ter, Qua, Qui" */
+function resumoDias(dias: boolean[]): string {
+  const marcados = dias.map((v, i) => (v ? i : -1)).filter((i) => i >= 0)
+  if (marcados.length === 0) return 'Nenhum'
+  if (marcados.length === 7) return 'Todos os dias'
+  const seguidos = marcados.every((d, i) => i === 0 || d === marcados[i - 1] + 1)
+  if (seguidos && marcados.length >= 3) {
+    const de = DIAS_LONGOS[marcados[0]]
+    return `${de.charAt(0).toUpperCase()}${de.slice(1)} a ${DIAS_LONGOS[marcados[marcados.length - 1]]}`
+  }
+  return marcados.map((d) => DIAS_CURTOS[d]).join(', ')
+}
+
+function LinhaAjuste({ rotulo, valor, destino }: { rotulo: string; valor: string; destino: string }) {
+  return (
+    <a class="linha" href={href(destino)}>
+      <span>{rotulo}</span>
+      <span class="valor-lateral">
+        {valor} <Icon nome="avancar" size={18} />
+      </span>
+    </a>
+  )
+}
+
 export function Mais() {
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const totalCategorias = useLiveQuery(() => db.categories.filter((c) => !c.arquivada).count(), [], 0)
@@ -112,19 +139,6 @@ export function Mais() {
             {totalCategorias} <Icon nome="avancar" size={18} />
           </span>
         </a>
-        <a class="linha" href={href('/cartao/ajustes')}>
-          <span>Cartão de crédito</span>
-          <span class="valor-lateral">
-            {cartao ? `${cartao.nome}, fecha dia ${cartao.diaFechamento}` : 'Cadastrar'} <Icon nome="avancar" size={18} />
-          </span>
-        </a>
-        <a class="linha" href={href('/voucher/ajustes')}>
-          <span>Voucher</span>
-          <span class="valor-lateral">
-            {voucher ? `${formatValor(voucher.valorMensal)}, dia ${voucher.diaCredito}` : 'Configurar'}{' '}
-            <Icon nome="avancar" size={18} />
-          </span>
-        </a>
       </div>
 
       <section>
@@ -158,6 +172,42 @@ export function Mais() {
             </div>
             <span class="apoio">No automático, o app segue o modo claro ou escuro do iPhone.</span>
           </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="rotulo-grupo">Cartão de crédito</h2>
+        <div class="grupo">
+          {cartao ? (
+            <>
+              <LinhaAjuste rotulo="Nome" valor={cartao.nome} destino="/cartao/ajustes" />
+              <LinhaAjuste rotulo="Fecha no dia" valor={String(cartao.diaFechamento)} destino="/cartao/ajustes" />
+              <LinhaAjuste rotulo="Vence no dia" valor={String(cartao.diaVencimento)} destino="/cartao/ajustes" />
+              <LinhaAjuste rotulo="Limite" valor={cartao.limite ? formatValor(cartao.limite) : 'Sem limite'} destino="/cartao/ajustes" />
+            </>
+          ) : (
+            <a class="linha linha-acao" href={href('/cartao/ajustes')}>
+              Cadastrar cartão
+            </a>
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="rotulo-grupo">Voucher</h2>
+        <div class="grupo">
+          {voucher ? (
+            <>
+              <LinhaAjuste rotulo="Valor por mês" valor={formatValor(voucher.valorMensal)} destino="/voucher/ajustes" />
+              <LinhaAjuste rotulo="Cai no dia" valor={String(voucher.diaCredito)} destino="/voucher/ajustes" />
+              <LinhaAjuste rotulo="Dias na empresa" valor={resumoDias(voucher.diasEmpresa)} destino="/voucher/ajustes" />
+              <LinhaAjuste rotulo="Saldo que sobra" valor={voucher.acumulaSaldo ? 'Acumula' : 'Não acumula'} destino="/voucher/ajustes" />
+            </>
+          ) : (
+            <a class="linha linha-acao" href={href('/voucher/ajustes')}>
+              Configurar voucher
+            </a>
+          )}
         </div>
       </section>
 

@@ -189,6 +189,11 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   gera a receita com a data de HOJE. Atrasadas em vermelho. Tocar abre Editar/Excluir.
   Início mostra o cartão "A receber".
 
+- Tela Mais reorganizada conforme o canvas (07/10): atalhos (Assinaturas, Receitas,
+  Categorias), depois seções Perfil, Cartão de crédito, Voucher e Backup. Cartão e
+  voucher mostram os valores configurados; tocar numa linha abre os ajustes daquela
+  parte (sem cadastro: "Cadastrar cartão" / "Configurar voucher").
+
 ### Próximo: Etapa 5 (acabamento)
 
 1. Revisão geral no iPhone com uso real (estados vazios, textos, acessibilidade).
