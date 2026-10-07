@@ -35,6 +35,7 @@ describe('formatValor e formatComSinal', () => {
   it('receita com +, despesa com sinal de menos', () => {
     expect(formatComSinal(1890, 'despesa')).toBe('−18,90')
     expect(formatComSinal(520000, 'receita')).toBe('+5.200,00')
+    expect(formatComSinal(0, 'despesa')).toBe('0,00')
   })
 })
 

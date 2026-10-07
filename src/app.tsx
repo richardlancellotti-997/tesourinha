@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef } from 'preact/hooks'
 import { db } from './db/db'
 import { PERFIL_ID } from './db/repo'
-import type { Kind } from './db/types'
+import type { Kind, PaymentMethod } from './db/types'
 import { useRota } from './router'
 import { useAviso } from './ui/aviso'
 import { Folha } from './ui/folha'
@@ -10,7 +10,8 @@ import { BoasVindas } from './ui/screens/BoasVindas'
 import { Cartao } from './ui/screens/Cartao'
 import { CartaoAjustes } from './ui/screens/CartaoAjustes'
 import { Categorias } from './ui/screens/Categorias'
-import { EmBreve } from './ui/screens/EmBreve'
+import { Voucher } from './ui/screens/Voucher'
+import { VoucherAjustes } from './ui/screens/VoucherAjustes'
 import { Inicio } from './ui/screens/Inicio'
 import { Lancar } from './ui/screens/Lancar'
 import { Mais } from './ui/screens/Mais'
@@ -57,6 +58,7 @@ export function App() {
           key={`${param ?? 'novo'}-${rota.params.get('parcela') ?? ''}`}
           id={param}
           soParcela={rota.params.get('parcela') === '1'}
+          formaInicial={(rota.params.get('forma') as PaymentMethod) ?? undefined}
           tipoInicial={(rota.params.get('tipo') as Kind) ?? undefined}
         />
       )
@@ -66,7 +68,7 @@ export function App() {
       aba = 'cartao'
       break
     case 'voucher':
-      conteudo = <EmBreve qual="voucher" />
+      conteudo = param === 'ajustes' ? <VoucherAjustes /> : <Voucher />
       aba = 'voucher'
       break
     case 'mais':

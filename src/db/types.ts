@@ -89,11 +89,18 @@ export interface VoucherConfig extends BaseRecord {
   valorMensal: Cents
   diaCredito: number
   acumulaSaldo: boolean
+  /** Dias da semana na empresa, 0 = domingo … 6 = sábado */
+  diasEmpresa: boolean[]
+  /** Dia em que o voucher foi configurado (o saldo informado vale a partir dele) */
+  inicio: LocalDate
 }
 
 export interface VoucherCredit extends BaseRecord {
   data: LocalDate
+  /** Pode ser negativo numa correção de saldo */
   valor: Cents
+  /** inicial = saldo informado ao configurar; mensal = crédito automático; ajuste = correção */
+  origem: 'inicial' | 'mensal' | 'ajuste'
 }
 
 export interface InvoicePayment extends BaseRecord {

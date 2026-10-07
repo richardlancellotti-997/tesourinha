@@ -27,6 +27,8 @@ export interface TotalCategoria {
   total: Cents
   /** Quanto do total veio de parcelas de compras parceladas no crédito */
   parcelado: Cents
+  /** Quanto do total foi pago com voucher (fica fora do Saiu/Sobrou) */
+  voucher: Cents
 }
 
 export interface ResumoMes {
@@ -41,25 +43,31 @@ export interface ResumoMes {
 /**
  * Resumo de um mês pelo mês no balanço: débito e receitas pela data; crédito pelo mês em
  * que a fatura vence (cada parcela no seu mês).
+ * O voucher é uma carteira separada (decisão de 06/10/2026): seus gastos ficam fora do
+ * Entrou/Saiu/Sobrou, mas aparecem nas categorias ("Para onde foi"), marcados à parte.
  */
 export function resumoDoMes(lancamentos: LancamentoBase[], ym: YearMonth): ResumoMes {
   let entrou = 0
   let saiu = 0
   const saiuPorForma: Record<FormaPagamento, Cents> = { debito_pix: 0, credito: 0, voucher: 0 }
-  const cats = new Map<string, { total: Cents; parcelado: Cents }>()
+  const cats = new Map<string, { total: Cents; parcelado: Cents; voucher: Cents }>()
 
   for (const l of lancamentos) {
     if (l.mesBalanco !== ym) continue
     if (l.tipo === 'receita') {
       entrou += l.valor
+      continue
+    }
+    const c = cats.get(l.categoriaId) ?? { total: 0, parcelado: 0, voucher: 0 }
+    c.total += l.valor
+    if (l.formaPagamento === 'voucher') {
+      c.voucher += l.valor
     } else {
       saiu += l.valor
       saiuPorForma[l.formaPagamento] += l.valor
-      const c = cats.get(l.categoriaId) ?? { total: 0, parcelado: 0 }
-      c.total += l.valor
       if (l.parcelaGrupoId) c.parcelado += l.valor
-      cats.set(l.categoriaId, c)
     }
+    cats.set(l.categoriaId, c)
   }
 
   const porCategoria = [...cats.entries()]
@@ -79,6 +87,7 @@ export function principaisCategorias(porCategoria: TotalCategoria[], n = 5): Tot
       categoriaId: null,
       total: resto.reduce((s, c) => s + c.total, 0),
       parcelado: resto.reduce((s, c) => s + c.parcelado, 0),
+      voucher: resto.reduce((s, c) => s + c.voucher, 0),
     },
   ]
 }

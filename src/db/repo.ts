@@ -4,8 +4,9 @@ import { CATEGORIAS_PADRAO, type CorCategoria, type IconeCategoria } from '../do
 import type { Cents } from '../domain/money'
 import type { LocalDate, YearMonth } from '../domain/dates'
 import { mesNoBalanco, parcelar } from '../domain/invoice'
+import { cicloDe, creditosEntre, ritmoDoCiclo, saldoVoucher, type Ciclo, type Ritmo } from '../domain/voucher'
 import { db, newId, nowISO } from './db'
-import type { Card, Category, Kind, PaymentMethod, Profile, Transaction } from './types'
+import type { Card, Category, Kind, PaymentMethod, Profile, Transaction, VoucherConfig } from './types'
 
 export const PERFIL_ID = 'perfil'
 
@@ -164,6 +165,96 @@ export async function salvarCartao(dados: DadosCartao, id?: string): Promise<str
   const novoId = newId()
   await db.cards.add({ ...dados, nome, limite: dados.limite || undefined, id: novoId, arquivado: false, createdAt: agora, updatedAt: agora })
   return novoId
+}
+
+// ---------- Voucher ----------
+
+export const VOUCHER_ID = 'voucher'
+
+export interface DadosVoucher {
+  valorMensal: Cents
+  diaCredito: number
+  acumulaSaldo: boolean
+  diasEmpresa: boolean[]
+}
+
+/**
+ * Cria ou altera o voucher. Na primeira vez, `saldoHoje` é o saldo inicial. Depois, se
+ * vier diferente do saldo calculado, grava uma correção pela diferença.
+ */
+export async function salvarVoucher(dados: DadosVoucher, hoje: LocalDate, saldoHoje?: Cents): Promise<void> {
+  if (!Number.isInteger(dados.diaCredito) || dados.diaCredito < 1 || dados.diaCredito > 31) {
+    throw new RangeError('Dia precisa estar entre 1 e 31')
+  }
+  if (!Number.isInteger(dados.valorMensal) || dados.valorMensal < 0) throw new RangeError('Valor inválido')
+  const agora = nowISO()
+  await db.transaction('rw', db.voucherConfig, db.voucherCredits, db.transactions, async () => {
+    const atual = await db.voucherConfig.get(VOUCHER_ID)
+    if (!atual) {
+      await db.voucherConfig.add({ ...dados, id: VOUCHER_ID, inicio: hoje, createdAt: agora, updatedAt: agora })
+      await db.voucherCredits.add({
+        id: newId(),
+        data: hoje,
+        valor: saldoHoje ?? 0,
+        origem: 'inicial',
+        createdAt: agora,
+        updatedAt: agora,
+      })
+      return
+    }
+    await db.voucherConfig.update(VOUCHER_ID, { ...dados, updatedAt: agora })
+    if (saldoHoje !== undefined) {
+      await garantirCreditosVoucher(hoje)
+      const saldo = (await estadoDoVoucher(hoje))!.saldo
+      if (saldoHoje !== saldo) {
+        await db.voucherCredits.add({
+          id: newId(),
+          data: hoje,
+          valor: saldoHoje - saldo,
+          origem: 'ajuste',
+          createdAt: agora,
+          updatedAt: agora,
+        })
+      }
+    }
+  })
+}
+
+/** Grava os créditos mensais que já deviam ter caído (pode rodar quantas vezes for preciso). */
+export async function garantirCreditosVoucher(hoje: LocalDate): Promise<void> {
+  await db.transaction('rw', db.voucherConfig, db.voucherCredits, async () => {
+    const cfg = await db.voucherConfig.get(VOUCHER_ID)
+    if (!cfg) return
+    const ultimoMensal = await db.voucherCredits.filter((c) => c.origem === 'mensal').reverse().sortBy('data')
+    const desde = ultimoMensal[0]?.data && ultimoMensal[0].data > cfg.inicio ? ultimoMensal[0].data : cfg.inicio
+    const agora = nowISO()
+    const novas = creditosEntre(desde, hoje, cfg.diaCredito)
+    if (novas.length) {
+      await db.voucherCredits.bulkAdd(
+        novas.map((data) => ({ id: newId(), data, valor: cfg.valorMensal, origem: 'mensal' as const, createdAt: agora, updatedAt: agora })),
+      )
+    }
+  })
+}
+
+export interface EstadoVoucher {
+  cfg: VoucherConfig
+  ciclo: Ciclo
+  saldo: Cents
+  /** Gasto no ciclo até hoje */
+  gastoNoCiclo: Cents
+  ritmo: Ritmo
+}
+
+export async function estadoDoVoucher(hoje: LocalDate): Promise<EstadoVoucher | null> {
+  const cfg = await db.voucherConfig.get(VOUCHER_ID)
+  if (!cfg) return null
+  const ciclo = cicloDe(hoje, cfg.diaCredito)
+  const creditos = await db.voucherCredits.toArray()
+  const gastos = await db.transactions.where('formaPagamento').equals('voucher').filter((t) => t.tipo === 'despesa').toArray()
+  const saldo = saldoVoucher(creditos, gastos, hoje, ciclo, cfg.acumulaSaldo)
+  const gastoNoCiclo = gastos.filter((g) => g.data >= ciclo.inicio && g.data <= hoje).reduce((s, g) => s + g.valor, 0)
+  return { cfg, ciclo, saldo, gastoNoCiclo, ritmo: ritmoDoCiclo(saldo, hoje, ciclo, cfg.diasEmpresa) }
 }
 
 export async function registrarPagamento(cardId: string, faturaRef: YearMonth, valorPago: Cents, dataPagamento: LocalDate) {

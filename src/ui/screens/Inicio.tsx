@@ -45,6 +45,7 @@ export function Inicio() {
   const barras = principaisCategorias(r.porCategoria)
   const maior = barras.reduce((m, b) => Math.max(m, b.total), 0)
   const temParcelas = barras.some((b) => b.parcelado > 0)
+  const temVoucher = barras.some((b) => b.voucher > 0)
   const formas = ORDEM_FORMAS.filter((f) => r.saiuPorForma[f] > 0)
   const dias = agruparPorDia(juntarParcelas(doMes, ym))
   const anteriores = noBalanco
@@ -125,29 +126,42 @@ export function Inicio() {
               const cat = b.categoriaId ? porId.get(b.categoriaId) : undefined
               const nome = b.categoriaId ? (cat?.nome ?? 'Sem categoria') : 'Demais'
               const largura = Math.max(3, Math.round((b.total / maior) * 100))
+              const avista = b.total - b.parcelado - b.voucher
+              const detalhes = [
+                b.parcelado ? `${formatValor(b.parcelado)} em parcelas` : '',
+                b.voucher ? `${formatValor(b.voucher)} no voucher` : '',
+              ].filter(Boolean)
               return (
                 <li
                   key={b.categoriaId ?? 'demais'}
-                  aria-label={`${nome}: ${formatValor(b.total)}${b.parcelado ? `, dos quais ${formatValor(b.parcelado)} em parcelas` : ''}`}
+                  aria-label={`${nome}: ${formatValor(b.total)}${detalhes.length ? `, dos quais ${detalhes.join(' e ')}` : ''}`}
                 >
                   <span class="barras-nome">
                     <span class="ponto" style={{ background: `var(--cat-${cat?.cor ?? 'cinza'})` }} />
                     {nome}
                   </span>
                   <span class="barra-trilho" style={{ width: `${largura}%` }} aria-hidden="true">
-                    {b.total > b.parcelado && <span class="barra" style={{ flex: b.total - b.parcelado }} />}
+                    {avista > 0 && <span class="barra" style={{ flex: avista }} />}
                     {b.parcelado > 0 && <span class="barra barra-parcelas" style={{ flex: b.parcelado }} />}
+                    {b.voucher > 0 && <span class="barra barra-voucher" style={{ flex: b.voucher }} />}
                   </span>
                   <span class="barras-valor">{formatValor(b.total)}</span>
                 </li>
               )
             })}
           </ul>
-          {temParcelas && (
-            <p class="legenda">
-              <span>
-                <span class="ponto ponto-parcelas" /> Parcelas de compras parceladas no crédito
-              </span>
+          {(temParcelas || temVoucher) && (
+            <p class="legenda legenda-coluna">
+              {temParcelas && (
+                <span>
+                  <span class="ponto ponto-parcelas" /> Parcelas de compras parceladas no crédito
+                </span>
+              )}
+              {temVoucher && (
+                <span>
+                  <span class="ponto ponto-voucher" /> Pago com voucher (fica fora do saldo do mês)
+                </span>
+              )}
             </p>
           )}
         </section>

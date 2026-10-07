@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { BackupInvalido, gerarBackup, lerBackup, nomeArquivoBackup, restaurarBackup } from '../../db/backup'
 import { db, nowISO } from '../../db/db'
-import { cartaoPrincipal, PERFIL_ID, salvarPerfil } from '../../db/repo'
+import { cartaoPrincipal, PERFIL_ID, salvarPerfil, VOUCHER_ID } from '../../db/repo'
+import { formatValor } from '../../domain/money'
 import type { Theme } from '../../db/types'
 import { diffDays, today } from '../../domain/dates'
 import { href } from '../../router'
@@ -20,6 +21,7 @@ export function Mais() {
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const totalCategorias = useLiveQuery(() => db.categories.filter((c) => !c.arquivada).count(), [], 0)
   const cartao = useLiveQuery(() => cartaoPrincipal(), [])
+  const voucher = useLiveQuery(() => db.voucherConfig.get(VOUCHER_ID), [])
   const [nome, setNome] = useState('')
   const arquivo = useRef<HTMLInputElement>(null)
 
@@ -99,6 +101,13 @@ export function Mais() {
             {cartao ? `${cartao.nome}, fecha dia ${cartao.diaFechamento}` : 'Cadastrar'} <Icon nome="avancar" size={18} />
           </span>
         </a>
+        <a class="linha" href={href('/voucher/ajustes')}>
+          <span>Voucher</span>
+          <span class="valor-lateral">
+            {voucher ? `${formatValor(voucher.valorMensal)}, dia ${voucher.diaCredito}` : 'Configurar'}{' '}
+            <Icon nome="avancar" size={18} />
+          </span>
+        </a>
       </div>
 
       <section>
@@ -156,7 +165,6 @@ export function Mais() {
         </p>
       </section>
 
-      <p class="apoio nota-grupo">O voucher ganha seus ajustes na próxima versão.</p>
     </main>
   )
 }

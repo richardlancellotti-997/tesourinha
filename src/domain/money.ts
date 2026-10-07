@@ -17,6 +17,7 @@ export function formatValor(cents: Cents): string {
 
 /** Receita com "+", despesa com "−" (sinal de menos tipográfico). */
 export function formatComSinal(cents: Cents, tipo: 'despesa' | 'receita'): string {
+  if (cents === 0) return formatValor(0)
   return (tipo === 'receita' ? '+' : '−') + formatValor(Math.abs(cents))
 }
 

@@ -92,6 +92,13 @@ export function rotuloData(d: LocalDate, hoje: LocalDate): string {
   return `${DIAS_CURTOS[diaDaSemana(d)]}, ${curta}`
 }
 
+/** Soma (ou subtrai) dias a uma data local. */
+export function addDays(d: LocalDate, n: number): LocalDate {
+  const { year, month, day } = parseDate(d)
+  const dt = new Date(Date.UTC(year, month - 1, day + n))
+  return makeDate(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate())
+}
+
 /** Diferença em dias entre duas datas locais (b - a). */
 export function diffDays(a: LocalDate, b: LocalDate): number {
   const toUTC = (d: LocalDate) => {

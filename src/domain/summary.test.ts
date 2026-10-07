@@ -30,13 +30,16 @@ describe('resumoDoMes', () => {
   ]
   const r = resumoDoMes(dados, '2026-10')
 
-  it('soma entradas, saídas e o que sobrou', () => {
+  it('soma entradas, saídas e o que sobrou (voucher fica de fora: carteira separada)', () => {
     expect(r.entrou).toBe(520000)
-    expect(r.saiu).toBe(85000 + 14235 + 2340 + 5000)
-    expect(r.sobrou).toBe(520000 - 106575)
+    expect(r.saiu).toBe(85000 + 2340 + 5000)
+    expect(r.sobrou).toBe(520000 - 92340)
   })
   it('separa as saídas por forma de pagamento', () => {
-    expect(r.saiuPorForma).toEqual({ debito_pix: 90000, credito: 2340, voucher: 14235 })
+    expect(r.saiuPorForma).toEqual({ debito_pix: 90000, credito: 2340, voucher: 0 })
+  })
+  it('voucher aparece na categoria, marcado à parte', () => {
+    expect(r.porCategoria.find((c) => c.categoriaId === 'cat-mercado')).toEqual({ categoriaId: 'cat-mercado', total: 19235, parcelado: 0, voucher: 14235 })
   })
   it('ordena as categorias de despesa da maior para a menor', () => {
     expect(r.porCategoria.map((c) => [c.categoriaId, c.total])).toEqual([
@@ -69,7 +72,7 @@ describe('resumoDoMes', () => {
     )
     const out = resumoDoMes(parcelas, '2026-10')
     expect(out.saiu).toBe(20000)
-    expect(out.porCategoria).toEqual([{ categoriaId: 'cat-lazer', total: 20000, parcelado: 20000 }])
+    expect(out.porCategoria).toEqual([{ categoriaId: 'cat-lazer', total: 20000, parcelado: 20000, voucher: 0 }])
     expect(resumoDoMes(parcelas, '2026-12').saiu).toBe(20000)
     expect(resumoDoMes(parcelas, '2027-01').saiu).toBe(0)
   })
@@ -82,11 +85,11 @@ describe('resumoDoMes', () => {
 })
 
 describe('principaisCategorias', () => {
-  const cats = [700, 600, 500, 400, 300, 200, 100].map((total, i) => ({ categoriaId: `c${i}`, total, parcelado: i === 6 ? 100 : 0 }))
+  const cats = [700, 600, 500, 400, 300, 200, 100].map((total, i) => ({ categoriaId: `c${i}`, total, parcelado: i === 6 ? 100 : 0, voucher: i === 5 ? 50 : 0 }))
   it('mantém as 5 maiores e agrupa o resto', () => {
     const r = principaisCategorias(cats)
     expect(r).toHaveLength(6)
-    expect(r[5]).toEqual({ categoriaId: null, total: 300, parcelado: 100 })
+    expect(r[5]).toEqual({ categoriaId: null, total: 300, parcelado: 100, voucher: 50 })
   })
   it('não agrupa quando sobraria só uma categoria', () => {
     expect(principaisCategorias(cats.slice(0, 6))).toHaveLength(6)

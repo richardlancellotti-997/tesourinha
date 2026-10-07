@@ -3,7 +3,9 @@ import { useEffect, useState } from 'preact/hooks'
 import { db } from '../../db/db'
 import {
   cartaoPrincipal,
+  estadoDoVoucher,
   excluirLancamentos,
+  type EstadoVoucher,
   lancamentosDaCompra,
   PERFIL_ID,
   salvarCompra,
@@ -18,11 +20,10 @@ import { href, voltar } from '../../router'
 import { avisar } from '../aviso'
 import { Icon, IconeCategoria } from '../Icon'
 
-// Voucher é liberado na Etapa 3.
 const FORMAS: { id: PaymentMethod; nome: string; liberada: boolean }[] = [
   { id: 'debito_pix', nome: 'Débito/Pix', liberada: true },
   { id: 'credito', nome: 'Crédito', liberada: true },
-  { id: 'voucher', nome: 'Voucher', liberada: false },
+  { id: 'voucher', nome: 'Voucher', liberada: true },
 ]
 const liberada = (f?: PaymentMethod) => FORMAS.some((x) => x.id === f && x.liberada)
 
@@ -42,17 +43,28 @@ function tamanhoDoValor(texto: string): number {
  * - compra: /lancar/<id> edita o lançamento; se for parcelado, a compra toda
  * - parcela: /lancar/<id>?parcela=1 edita só aquela parcela
  */
-export function Lancar({ id, tipoInicial, soParcela }: { id?: string; tipoInicial?: Kind; soParcela?: boolean }) {
+export function Lancar({
+  id,
+  tipoInicial,
+  formaInicial,
+  soParcela,
+}: {
+  id?: string
+  tipoInicial?: Kind
+  formaInicial?: PaymentMethod
+  soParcela?: boolean
+}) {
   const hoje = today()
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const categorias = useLiveQuery(() => db.categories.orderBy('ordem').toArray(), [], [] as Category[])
   const cartao = useLiveQuery(() => cartaoPrincipal(), [], null as Card | null | undefined)
+  const voucher = useLiveQuery(() => estadoDoVoucher(hoje), [hoje], undefined as EstadoVoucher | null | undefined)
 
   const [tipo, setTipo] = useState<Kind>(tipoInicial ?? 'despesa')
   const [digitos, setDigitos] = useState('')
   const [data, setData] = useState(hoje)
   const [descricao, setDescricao] = useState('')
-  const [forma, setForma] = useState<PaymentMethod | null>(null)
+  const [forma, setForma] = useState<PaymentMethod | null>(liberada(formaInicial) ? formaInicial! : null)
   const [catId, setCatId] = useState<string | null>(null)
   const [parcelas, setParcelas] = useState(1)
   const [escolhaFatura, setEscolhaFatura] = useState<EscolhaFatura | null>(null)
@@ -87,14 +99,25 @@ export function Lancar({ id, tipoInicial, soParcela }: { id?: string; tipoInicia
   // Sem escolha explícita, vale a última forma usada (se já estiver liberada).
   const formaEfetiva: PaymentMethod = forma ?? (liberada(perfil?.ultimaForma) ? perfil!.ultimaForma! : 'debito_pix')
   const ehCredito = tipo === 'despesa' && formaEfetiva === 'credito'
+  const ehVoucher = tipo === 'despesa' && formaEfetiva === 'voucher'
 
   const valor = digitosParaCentavos(digitos)
   const texto = formatValor(valor)
-  const opcoes = categorias.filter((c) => c.tipo === tipo && (!c.arquivada || c.id === catId))
+  const original = originais?.[0]
+  // No voucher, só as categorias que podem ser pagas com ele
+  const opcoes = categorias.filter(
+    (c) =>
+      c.tipo === tipo &&
+      (!c.arquivada || c.id === catId) &&
+      (!ehVoucher || c.permitidaNoVoucher || c.id === original?.categoriaId),
+  )
   const catValida = catId !== null && opcoes.some((c) => c.id === catId)
 
+  // Saldo do voucher depois deste gasto (na edição, o valor antigo volta para o saldo)
+  const devolvido = original?.formaPagamento === 'voucher' && original.data <= hoje ? original.valor : 0
+  const saldoDepois = voucher ? voucher.saldo + devolvido - (data <= hoje ? valor : 0) : null
+
   // ---- Fatura (só no crédito) ----
-  const original = originais?.[0]
   // Na edição, se a data e a forma não mudaram, a compra continua na fatura em que estava
   // (mesmo que o dia de fechamento do cartão tenha mudado depois).
   const manterFatura =
@@ -111,6 +134,7 @@ export function Lancar({ id, tipoInicial, soParcela }: { id?: string; tipoInicia
   else if (!catValida) pendencia = 'Escolha a categoria'
   else if (ehCredito && modo !== 'parcela' && !cartao) pendencia = 'Cadastre o cartão para usar o crédito'
   else if (ehCredito && modo !== 'parcela' && !faturaInicial) pendencia = 'Escolha a fatura para salvar'
+  else if (ehVoucher && voucher === null) pendencia = 'Configure o voucher para usá-lo'
 
   let rotuloSalvar = pendencia
   if (!rotuloSalvar) {
@@ -288,6 +312,23 @@ export function Lancar({ id, tipoInicial, soParcela }: { id?: string; tipoInicia
               </button>
             ))}
           </div>
+        )}
+
+        {ehVoucher && voucher === null && (
+          <p class="aviso-inline">
+            Para lançar no voucher, configure o vale-alimentação primeiro.{' '}
+            <a class="link-acao" href={href('/voucher/ajustes')}>
+              Configurar voucher
+            </a>
+          </p>
+        )}
+
+        {ehVoucher && saldoDepois !== null && (
+          <p class={`apoio info-fatura ${saldoDepois < 0 ? 'negativo' : ''}`}>
+            {saldoDepois < 0
+              ? `Este gasto passa o saldo do voucher em ${formatValor(-saldoDepois)}.`
+              : `Saldo no voucher depois deste gasto: ${formatValor(saldoDepois)}.`}
+          </p>
         )}
 
         {ehCredito && modo !== 'parcela' && !cartao && cartao !== null && (

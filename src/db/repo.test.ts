@@ -6,6 +6,8 @@ import {
   apagarCategoria,
   cartaoPrincipal,
   desfazerPagamentos,
+  estadoDoVoucher,
+  garantirCreditosVoucher,
   excluirLancamentos,
   garantirDadosIniciais,
   lancamentosDaCompra,
@@ -16,6 +18,7 @@ import {
   salvarCompra,
   salvarParcela,
   salvarPerfil,
+  salvarVoucher,
 } from './repo'
 
 beforeEach(async () => {
@@ -153,6 +156,43 @@ describe('categorias', () => {
 
   it('exige nome', async () => {
     await expect(salvarCategoria({ ...nova, nome: '   ' })).rejects.toThrow()
+  })
+})
+
+describe('voucher', () => {
+  const cfg = { valorMensal: 110000, diaCredito: 20, acumulaSaldo: true, diasEmpresa: [false, true, true, true, true, true, false] }
+  const gastoVoucher = { ...gasto, formaPagamento: 'voucher' as const }
+
+  it('saldo inicial, gastos e créditos mensais automáticos', async () => {
+    await salvarVoucher(cfg, '2026-10-05', 50000)
+    await salvarCompra({ ...gastoVoucher, valor: 8720, data: '2026-10-05' })
+    expect((await estadoDoVoucher('2026-10-05'))?.saldo).toBe(41280)
+
+    // em 20/11 já caíram os créditos de 20/10 e 20/11; rodar de novo não duplica
+    await garantirCreditosVoucher('2026-11-20')
+    await garantirCreditosVoucher('2026-11-20')
+    expect(await db.voucherCredits.where('data').equals('2026-10-20').count()).toBe(1)
+    expect((await estadoDoVoucher('2026-11-20'))?.saldo).toBe(41280 + 220000)
+  })
+
+  it('o gasto no voucher fica no mês da data e não entra no crédito do cartão', async () => {
+    const [id] = await salvarCompra({ ...gastoVoucher, valor: 1000 })
+    const tx = await db.transactions.get(id)
+    expect(tx?.mesBalanco).toBe('2026-10')
+    expect(tx?.faturaRef).toBeUndefined()
+  })
+
+  it('corrigir o saldo grava a diferença como ajuste', async () => {
+    await salvarVoucher(cfg, '2026-10-05', 50000)
+    await salvarVoucher(cfg, '2026-10-06', 45000)
+    expect((await estadoDoVoucher('2026-10-06'))?.saldo).toBe(45000)
+    expect(await db.voucherCredits.filter((c) => c.origem === 'ajuste').count()).toBe(1)
+  })
+
+  it('sem acumular, o saldo do ciclo anterior não passa para o novo', async () => {
+    await salvarVoucher({ ...cfg, acumulaSaldo: false }, '2026-10-05', 50000)
+    await garantirCreditosVoucher('2026-10-21')
+    expect((await estadoDoVoucher('2026-10-21'))?.saldo).toBe(110000)
   })
 })
 

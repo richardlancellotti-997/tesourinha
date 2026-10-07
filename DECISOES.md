@@ -123,16 +123,38 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 - Balanço do crédito pelo mês do vencimento (ver "Lançamento" acima) e esquema 2 do
   banco com migração automática dos dados e dos backups da versão 1.
 
-### Próximo: Etapa 3 (voucher)
+### Etapa 3 concluída (06/10/2026)
 
-1. Ajustes do voucher: valor mensal, dia do crédito, saldo acumula (padrão sim), dias
-   da semana na empresa (padrão seg–sex).
-2. Funções puras + testes: ciclo (do dia do crédito até a véspera do próximo, com dia 31),
-   créditos mensais automáticos, saldo derivado, dias úteis restantes descontando
-   feriados nacionais + Carnaval (seg e ter) + Sexta-feira Santa + Corpus Christi
-   (cálculo da Páscoa), "dá para gastar por dia útil".
-3. Liberar "Voucher" no lançamento, só com categorias permitidas no voucher.
-4. Tela Voucher conforme o layout aprovado.
+- Voucher é CARTEIRA SEPARADA (escolha do Richard): crédito e gastos do voucher ficam
+  fora do Entrou/Saiu/Sobrou do Início; os gastos aparecem em "Para onde foi" com um
+  tom próprio e legenda "Pago com voucher (fica fora do saldo do mês)".
+- Configuração (Mais ou link do ciclo na tela): valor por mês, dia do crédito, saldo
+  inicial ("Quanto tem hoje"), acumula (padrão sim), dias da semana na empresa (padrão
+  seg–sex). O saldo inicial vale a partir do dia da configuração.
+- Créditos mensais são GRAVADOS automaticamente quando o dia chega (ao abrir o app ou
+  a tela); mudar o valor vale só para os próximos. Corrigir o "Saldo hoje" grava a
+  diferença como ajuste.
+- Ciclo: do dia do crédito até a véspera do próximo (dia 31 vira o último dia do mês).
+  Saldo acumulando = todos os créditos − todos os gastos até hoje; sem acumular = só o
+  ciclo atual.
+- "Dá para gastar por dia útil" = saldo ÷ dias na empresa de hoje (se for um) até o fim
+  do ciclo, sem feriados nacionais (inclui Consciência Negra, 20/11), Carnaval (seg e
+  ter), Sexta-feira Santa e Corpus Christi (Páscoa calculada).
+- Barra do ciclo: gasto ÷ disponível no ciclo, com marca de "hoje" pelos dias na empresa
+  já passados; texto avisa se o gasto está à frente do ritmo (mais de 5 pontos).
+- No lançamento, Voucher só oferece categorias marcadas "pode ser paga com voucher" e
+  mostra o saldo depois do gasto (avisa se passar do saldo).
+
+### Próximo: Etapa 4 (recorrências e receitas a receber)
+
+1. Assinaturas e contas fixas: cadastro (nome, valor, dia, forma, categoria), lançamento
+   automático no dia, ajuste de valor valendo dali em diante (histórico de valores),
+   pausar/encerrar, tela com total mensal (layout aprovado). No crédito, entram nas
+   próximas faturas.
+2. Receitas a receber: prevista (data esperada, quem paga) → marcar como recebida
+   (gera a receita). Fora do saldo até recebida. Tela Receitas (layout aprovado) e
+   atalho "A receber" no Início.
+3. Salário recorrente (receita recorrente) — confirmar se entra na V1.
 
 ### Pendências para confirmar com o Richard
 
