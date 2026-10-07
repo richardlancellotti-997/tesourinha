@@ -62,11 +62,23 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   funciona nesses dias (confirmado em 06/10/2026). Estaduais/municipais ficam fora por enquanto.
 - O saldo que sobra acumula para o próximo ciclo (configurável).
 
-## Onde paramos (05/10/2026)
+## Onde paramos (06/10/2026, à noite)
 
-- Etapa 0 concluída e publicada em https://richardlancellotti-997.github.io/tesourinha/
-  (deploy automático a cada push na `main`).
-- Plano de design e layouts APROVADOS. Etapa 1 APROVADA para começar.
+- Publicado em https://richardlancellotti-997.github.io/tesourinha/ (deploy automático a
+  cada push na `main`). Banco no esquema 2.
+- Etapas 0, 1, 2 e 3 CONCLUÍDAS e testadas pelo Richard no iPhone (último ajuste: valores
+  com vírgula e dias alinhados nos ajustes — publicado, falta ele confirmar no aparelho).
+- PRÓXIMO: Etapa 4 (ver "Próximo: Etapa 4" no fim). Antes de começar, confirmar com o
+  Richard se o salário fixo entra como receita recorrente na V1 (recomendação: sim).
+- Depois: Etapa 5 (acabamento: personalização já existe; revisar ícone, estados vazios,
+  CSV opcional no backup, testes no iPhone real) e itens pós-V1 do briefing.
+- Testes de navegador (Edge headless + playwright-core) ficam no scratchpad da sessão,
+  fora do repositório: roteiro (Etapa 1), credito, parcelas, voucher e barra (rodapé
+  preso). Recriar se necessário; a lógica está coberta pelos testes do Vitest.
+
+### Etapa 0 (05/10/2026)
+
+- Fundação publicada; plano de design e layouts aprovados.
 
 ### Etapa 1 concluída (06/10/2026)
 
@@ -166,12 +178,18 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
    (gera a receita). Fora do saldo até recebida. Tela Receitas (layout aprovado) e
    atalho "A receber" no Início.
 3. Salário recorrente (receita recorrente) — confirmar se entra na V1.
+4. Regras já decididas que valem para a Etapa 4: recorrência no crédito segue a regra
+   de fatura (inclusive a escolha no dia do fechamento?) e conta no balanço pelo mês do
+   vencimento; no voucher fica fora do saldo do mês; valores pelo `CampoValor`; listas
+   pelo `CampoLista`; nada de `position: fixed`.
 
 ### Pendências para confirmar com o Richard
 
-- Questões ainda abertas do briefing (seção 10): dados reais do cartão e do voucher
-  (preenchidos pelo próprio usuário em Ajustes); receitas recorrentes (salário) na V1;
-  preferências visuais da namorada.
+- Salário fixo como receita recorrente já na V1 (perguntado em 06/10, sem resposta).
+- Recorrência no crédito que cai no dia do fechamento: perguntar ou usar uma regra
+  fixa (ex.: sempre "Próxima")? Decidir ao desenhar a Etapa 4.
+- Confirmar no iPhone os campos de valor com vírgula (publicado em 06/10).
+- Preferências visuais da namorada (briefing, seção 10).
 
 ### Ambiente
 
