@@ -2,9 +2,10 @@
 
 import { CATEGORIAS_PADRAO, type CorCategoria, type IconeCategoria } from '../domain/categories'
 import type { Cents } from '../domain/money'
-import type { LocalDate } from '../domain/dates'
+import type { LocalDate, YearMonth } from '../domain/dates'
+import { parcelar } from '../domain/invoice'
 import { db, newId, nowISO } from './db'
-import type { Category, Kind, PaymentMethod, Profile, Transaction } from './types'
+import type { Card, Category, Kind, PaymentMethod, Profile, Transaction } from './types'
 
 export const PERFIL_ID = 'perfil'
 
@@ -44,41 +45,134 @@ export async function salvarPerfil(dados: Partial<Omit<Profile, 'id' | 'createdA
 
 // ---------- Lançamentos ----------
 
-export interface DadosLancamento {
+export interface DadosCompra {
   tipo: Kind
+  /** Valor total (no crédito parcelado, a soma das parcelas) */
   valor: Cents
   data: LocalDate
   categoriaId: string
   descricao?: string
   formaPagamento: PaymentMethod
+  /** Só no crédito */
+  cardId?: string
+  faturaInicial?: YearMonth
+  parcelas?: number
 }
 
-/** Cria (sem id) ou altera (com id) um lançamento. Devolve o id. */
-export async function salvarLancamento(dados: DadosLancamento, id?: string): Promise<string> {
+/**
+ * Grava um gasto ou receita. No crédito, gera uma parcela por fatura (cada parcela é um
+ * lançamento com a data da compra). `substituir` são os lançamentos que esta gravação
+ * substitui (edição): saem e entram os novos, numa única transação. Devolve os ids novos.
+ */
+export async function salvarCompra(dados: DadosCompra, substituir: string[] = []): Promise<string[]> {
   if (!Number.isInteger(dados.valor) || dados.valor <= 0) throw new RangeError('Valor precisa ser maior que zero')
   const agora = nowISO()
   const descricao = dados.descricao?.trim() || undefined
+  const base = {
+    tipo: dados.tipo,
+    data: dados.data,
+    categoriaId: dados.categoriaId,
+    descricao,
+    formaPagamento: dados.formaPagamento,
+  }
 
   return db.transaction('rw', db.transactions, db.profile, async () => {
-    let txId = id
-    if (txId) {
-      const atual = await db.transactions.get(txId)
-      if (!atual) throw new Error('Lançamento não encontrado')
-      const novo: Transaction = { ...atual, ...dados, descricao, updatedAt: agora }
-      await db.transactions.put(novo)
+    const antigos = (await db.transactions.bulkGet(substituir)).filter((t): t is Transaction => !!t)
+    const createdAt = antigos.map((t) => t.createdAt).sort()[0] ?? agora
+
+    let novos: Transaction[]
+    if (dados.tipo === 'despesa' && dados.formaPagamento === 'credito') {
+      if (!dados.cardId || !dados.faturaInicial) throw new Error('Compra no crédito sem cartão ou fatura')
+      const qtd = dados.parcelas ?? 1
+      const grupo = qtd > 1 ? newId() : undefined
+      novos = parcelar(dados.valor, qtd, dados.faturaInicial).map((p) => ({
+        ...base,
+        id: newId(),
+        valor: p.valor,
+        cardId: dados.cardId,
+        faturaRef: p.faturaRef,
+        parcelaGrupoId: grupo,
+        parcelaNumero: grupo ? p.numero : undefined,
+        parcelaTotal: grupo ? qtd : undefined,
+        createdAt,
+        updatedAt: agora,
+      }))
     } else {
-      txId = newId()
-      await db.transactions.add({ ...dados, descricao, id: txId, createdAt: agora, updatedAt: agora })
+      novos = [{ ...base, id: newId(), valor: dados.valor, createdAt, updatedAt: agora }]
     }
+
+    await db.transactions.bulkDelete(substituir)
+    await db.transactions.bulkAdd(novos)
     if (dados.tipo === 'despesa') {
       await db.profile.update(PERFIL_ID, { ultimaForma: dados.formaPagamento })
     }
-    return txId
+    return novos.map((t) => t.id)
   })
 }
 
-export async function excluirLancamento(id: string): Promise<void> {
-  await db.transactions.delete(id)
+/** Edita só uma parcela (valor, categoria e descrição); as outras ficam como estão. */
+export async function salvarParcela(
+  id: string,
+  dados: { valor: Cents; categoriaId: string; descricao?: string },
+): Promise<void> {
+  if (!Number.isInteger(dados.valor) || dados.valor <= 0) throw new RangeError('Valor precisa ser maior que zero')
+  await db.transactions.update(id, {
+    valor: dados.valor,
+    categoriaId: dados.categoriaId,
+    descricao: dados.descricao?.trim() || undefined,
+    updatedAt: nowISO(),
+  })
+}
+
+export async function excluirLancamentos(ids: string[]): Promise<void> {
+  await db.transactions.bulkDelete(ids)
+}
+
+/** Todas as parcelas da compra a que o lançamento pertence (ou só ele, se não for parcelado). */
+export async function lancamentosDaCompra(tx: Transaction): Promise<Transaction[]> {
+  if (!tx.parcelaGrupoId) return [tx]
+  const todas = await db.transactions.where('parcelaGrupoId').equals(tx.parcelaGrupoId).toArray()
+  return todas.sort((a, b) => (a.parcelaNumero ?? 0) - (b.parcelaNumero ?? 0))
+}
+
+// ---------- Cartão de crédito ----------
+
+export interface DadosCartao {
+  nome: string
+  diaFechamento: number
+  diaVencimento: number
+  limite?: Cents
+}
+
+/** Na V1 há um cartão só (o modelo já aceita vários). */
+export async function cartaoPrincipal(): Promise<Card | undefined> {
+  return (await db.cards.toArray()).find((c) => !c.arquivado)
+}
+
+export async function salvarCartao(dados: DadosCartao, id?: string): Promise<string> {
+  const nome = dados.nome.trim() || 'Meu cartão'
+  for (const dia of [dados.diaFechamento, dados.diaVencimento]) {
+    if (!Number.isInteger(dia) || dia < 1 || dia > 31) throw new RangeError('Dia precisa estar entre 1 e 31')
+  }
+  const agora = nowISO()
+  if (id) {
+    await db.cards.update(id, { ...dados, nome, limite: dados.limite || undefined, updatedAt: agora })
+    return id
+  }
+  const novoId = newId()
+  await db.cards.add({ ...dados, nome, limite: dados.limite || undefined, id: novoId, arquivado: false, createdAt: agora, updatedAt: agora })
+  return novoId
+}
+
+export async function registrarPagamento(cardId: string, faturaRef: YearMonth, valorPago: Cents, dataPagamento: LocalDate) {
+  const agora = nowISO()
+  const id = newId()
+  await db.invoicePayments.add({ id, cardId, faturaRef, valorPago, dataPagamento, createdAt: agora, updatedAt: agora })
+  return id
+}
+
+export async function desfazerPagamentos(cardId: string, faturaRef: YearMonth) {
+  await db.invoicePayments.where('[cardId+faturaRef]').equals([cardId, faturaRef]).delete()
 }
 
 // ---------- Categorias ----------

@@ -63,6 +63,43 @@ export function principaisCategorias(porCategoria: TotalCategoria[], n = 5): Tot
   return [...porCategoria.slice(0, n), { categoriaId: null, total: resto }]
 }
 
+export interface ComParcelas {
+  parcelaGrupoId?: string
+  parcelaNumero?: number
+  parcelaTotal?: number
+}
+
+/**
+ * Junta as parcelas de uma mesma compra numa linha só (a 1ª parcela, com o valor somado).
+ * Todas as parcelas guardam a data da compra, então caem no mesmo mês.
+ */
+export function juntarParcelas<T extends LancamentoBase & ComParcelas>(lancamentos: T[]): (T & { valorTotal: Cents })[] {
+  const grupos = new Map<string, T & { valorTotal: Cents }>()
+  const resultado: (T & { valorTotal: Cents })[] = []
+  for (const l of lancamentos) {
+    if (!l.parcelaGrupoId) {
+      resultado.push({ ...l, valorTotal: l.valor })
+      continue
+    }
+    const atual = grupos.get(l.parcelaGrupoId)
+    if (!atual) {
+      const item = { ...l, valorTotal: l.valor }
+      grupos.set(l.parcelaGrupoId, item)
+      resultado.push(item)
+    } else {
+      atual.valorTotal += l.valor
+      if ((l.parcelaNumero ?? 0) < (atual.parcelaNumero ?? 0)) {
+        // a linha representa a 1ª parcela (o link de edição abre a compra a partir dela)
+        const idx = resultado.indexOf(atual)
+        const trocado = { ...l, valorTotal: atual.valorTotal }
+        resultado[idx] = trocado
+        grupos.set(l.parcelaGrupoId, trocado)
+      }
+    }
+  }
+  return resultado
+}
+
 export interface GrupoDia<T> {
   data: LocalDate
   itens: T[]

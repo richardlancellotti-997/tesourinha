@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { BackupInvalido, gerarBackup, lerBackup, nomeArquivoBackup, restaurarBackup } from '../../db/backup'
 import { db, nowISO } from '../../db/db'
-import { PERFIL_ID, salvarPerfil } from '../../db/repo'
+import { cartaoPrincipal, PERFIL_ID, salvarPerfil } from '../../db/repo'
 import type { Theme } from '../../db/types'
 import { diffDays, today } from '../../domain/dates'
 import { href } from '../../router'
@@ -19,6 +19,7 @@ const TEMAS: { id: Theme; nome: string }[] = [
 export function Mais() {
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const totalCategorias = useLiveQuery(() => db.categories.filter((c) => !c.arquivada).count(), [], 0)
+  const cartao = useLiveQuery(() => cartaoPrincipal(), [])
   const [nome, setNome] = useState('')
   const arquivo = useRef<HTMLInputElement>(null)
 
@@ -92,6 +93,12 @@ export function Mais() {
             {totalCategorias} <Icon nome="avancar" size={18} />
           </span>
         </a>
+        <a class="linha" href={href('/cartao/ajustes')}>
+          <span>Cartão de crédito</span>
+          <span class="valor-lateral">
+            {cartao ? `${cartao.nome}, fecha dia ${cartao.diaFechamento}` : 'Cadastrar'} <Icon nome="avancar" size={18} />
+          </span>
+        </a>
       </div>
 
       <section>
@@ -149,7 +156,7 @@ export function Mais() {
         </p>
       </section>
 
-      <p class="apoio nota-grupo">Cartão de crédito e voucher ganham seus ajustes nas próximas versões.</p>
+      <p class="apoio nota-grupo">O voucher ganha seus ajustes na próxima versão.</p>
     </main>
   )
 }

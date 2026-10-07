@@ -5,7 +5,7 @@ import { PERFIL_ID } from '../../db/repo'
 import type { Category, PaymentMethod, Transaction } from '../../db/types'
 import { addMonths, diffDays, nomeMes, tituloMes, today, yearMonthOf } from '../../domain/dates'
 import { formatComSinal, formatValor } from '../../domain/money'
-import { agruparPorDia, principaisCategorias, resumoDoMes } from '../../domain/summary'
+import { agruparPorDia, juntarParcelas, principaisCategorias, resumoDoMes } from '../../domain/summary'
 import { href } from '../../router'
 import { Icon } from '../Icon'
 
@@ -43,7 +43,8 @@ export function Inicio() {
   const barras = principaisCategorias(r.porCategoria)
   const maior = barras.reduce((m, b) => Math.max(m, b.total), 0)
   const formas = ORDEM_FORMAS.filter((f) => r.saiuPorForma[f] > 0)
-  const dias = agruparPorDia(lancamentos)
+  // Uma compra parcelada aparece numa linha só, com o valor total
+  const dias = agruparPorDia(juntarParcelas(lancamentos))
 
   // Lembrete discreto de backup
   const diasSemBackup = perfil?.ultimoBackupEm ? diffDays(perfil.ultimoBackupEm.slice(0, 10), hoje) : null
@@ -165,21 +166,18 @@ export function Inicio() {
   )
 }
 
-function LinhaLancamento({ t, cat }: { t: Transaction; cat?: Category }) {
+function LinhaLancamento({ t, cat }: { t: Transaction & { valorTotal: number }; cat?: Category }) {
   const nomeCat = cat?.nome ?? 'Sem categoria'
+  const forma = NOME_FORMA[t.formaPagamento].toLowerCase() + (t.parcelaTotal ? ` em ${t.parcelaTotal}x` : '')
   const detalhe =
-    t.tipo === 'receita'
-      ? t.descricao
-        ? nomeCat
-        : 'Receita'
-      : [t.descricao ? nomeCat : null, NOME_FORMA[t.formaPagamento].toLowerCase()].filter(Boolean).join(', ')
+    t.tipo === 'receita' ? (t.descricao ? nomeCat : 'Receita') : [t.descricao ? nomeCat : null, forma].filter(Boolean).join(', ')
   return (
     <a class="lanc" href={href(`/lancar/${t.id}`)}>
       <span class="lanc-texto">
         <span class="lanc-principal">{t.descricao || nomeCat}</span>
         <span class="apoio">{detalhe}</span>
       </span>
-      <span class={`lanc-valor ${t.tipo === 'receita' ? 'entrada' : ''}`}>{formatComSinal(t.valor, t.tipo)}</span>
+      <span class={`lanc-valor ${t.tipo === 'receita' ? 'entrada' : ''}`}>{formatComSinal(t.valorTotal, t.tipo)}</span>
     </a>
   )
 }

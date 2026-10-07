@@ -5,7 +5,10 @@ import { PERFIL_ID } from './db/repo'
 import type { Kind } from './db/types'
 import { useRota } from './router'
 import { useAviso } from './ui/aviso'
+import { Folha } from './ui/folha'
 import { BoasVindas } from './ui/screens/BoasVindas'
+import { Cartao } from './ui/screens/Cartao'
+import { CartaoAjustes } from './ui/screens/CartaoAjustes'
 import { Categorias } from './ui/screens/Categorias'
 import { EmBreve } from './ui/screens/EmBreve'
 import { Inicio } from './ui/screens/Inicio'
@@ -49,10 +52,17 @@ export function App() {
   switch (tela) {
     case 'lancar':
       // Lançar ocupa a tela toda, sem a barra de navegação
-      conteudo = <Lancar key={param ?? 'novo'} id={param} tipoInicial={(rota.params.get('tipo') as Kind) ?? undefined} />
+      conteudo = (
+        <Lancar
+          key={`${param ?? 'novo'}-${rota.params.get('parcela') ?? ''}`}
+          id={param}
+          soParcela={rota.params.get('parcela') === '1'}
+          tipoInicial={(rota.params.get('tipo') as Kind) ?? undefined}
+        />
+      )
       break
     case 'cartao':
-      conteudo = <EmBreve qual="cartao" />
+      conteudo = param === 'ajustes' ? <CartaoAjustes /> : <Cartao />
       aba = 'cartao'
       break
     case 'voucher':
@@ -85,6 +95,7 @@ export function App() {
           {aviso.texto}
         </div>
       )}
+      <Folha />
     </div>
   )
 }

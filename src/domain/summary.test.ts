@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agruparPorDia, principaisCategorias, resumoDoMes, type LancamentoBase } from './summary'
+import { agruparPorDia, juntarParcelas, principaisCategorias, resumoDoMes, type LancamentoBase } from './summary'
 
 let seq = 0
 function l(p: Partial<LancamentoBase>): LancamentoBase {
@@ -62,6 +62,20 @@ describe('principaisCategorias', () => {
   })
   it('não agrupa quando sobraria só uma categoria', () => {
     expect(principaisCategorias(cats.slice(0, 6))).toHaveLength(6)
+  })
+})
+
+describe('juntarParcelas', () => {
+  it('uma linha por compra parcelada, com o valor total e a 1ª parcela', () => {
+    const p2 = { ...l({ valor: 20000 }), parcelaGrupoId: 'g', parcelaNumero: 2, parcelaTotal: 3 }
+    const p1 = { ...l({ valor: 20000 }), parcelaGrupoId: 'g', parcelaNumero: 1, parcelaTotal: 3 }
+    const p3 = { ...l({ valor: 20000 }), parcelaGrupoId: 'g', parcelaNumero: 3, parcelaTotal: 3 }
+    const avulso = l({ valor: 500 })
+    const r = juntarParcelas([p2, avulso, p1, p3])
+    expect(r).toHaveLength(2)
+    expect(r[0].id).toBe(p1.id)
+    expect(r[0].valorTotal).toBe(60000)
+    expect(r[1].valorTotal).toBe(500)
   })
 })
 

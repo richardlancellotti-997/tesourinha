@@ -51,7 +51,19 @@ const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julh
 const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const DIAS_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
+
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/** "2026-10-21" → "21/10" */
+export function diaMes(d: LocalDate): string {
+  return `${d.slice(8, 10)}/${d.slice(5, 7)}`
+}
+
+/** "2026-10-21" → "21/10, quarta" */
+export function diaMesSemana(d: LocalDate): string {
+  return `${diaMes(d)}, ${DIAS[diaDaSemana(d)]}`
+}
 
 /** "2026-10" → "outubro" */
 export function nomeMes(ym: YearMonth): string {

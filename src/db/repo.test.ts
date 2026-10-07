@@ -4,11 +4,17 @@ import { db } from './db'
 import { BackupInvalido, gerarBackup, lerBackup, restaurarBackup } from './backup'
 import {
   apagarCategoria,
-  excluirLancamento,
+  cartaoPrincipal,
+  desfazerPagamentos,
+  excluirLancamentos,
   garantirDadosIniciais,
+  lancamentosDaCompra,
   PERFIL_ID,
+  registrarPagamento,
+  salvarCartao,
   salvarCategoria,
-  salvarLancamento,
+  salvarCompra,
+  salvarParcela,
   salvarPerfil,
 } from './repo'
 
@@ -34,29 +40,86 @@ describe('dados iniciais', () => {
 })
 
 describe('lançamentos', () => {
-  it('cria, altera e exclui', async () => {
+  it('cria, altera (substituindo) e exclui', async () => {
     await salvarPerfil({ nome: 'Richard' })
-    const id = await salvarLancamento({ ...gasto, descricao: '  Feira  ' })
-    expect((await db.transactions.get(id))?.descricao).toBe('Feira')
+    const [id] = await salvarCompra({ ...gasto, descricao: '  Feira  ' })
+    const original = await db.transactions.get(id)
+    expect(original?.descricao).toBe('Feira')
 
-    await salvarLancamento({ ...gasto, valor: 3000, descricao: '' }, id)
-    const alterado = await db.transactions.get(id)
+    const [novoId] = await salvarCompra({ ...gasto, valor: 3000, descricao: '' }, [id])
+    const alterado = await db.transactions.get(novoId)
     expect(alterado?.valor).toBe(3000)
     expect(alterado?.descricao).toBeUndefined()
+    expect(alterado?.createdAt).toBe(original?.createdAt) // mantém a posição na lista
+    expect(await db.transactions.count()).toBe(1)
 
-    await excluirLancamento(id)
+    await excluirLancamentos([novoId])
     expect(await db.transactions.count()).toBe(0)
   })
 
   it('lembra a última forma de pagamento usada num gasto', async () => {
     await salvarPerfil({ nome: 'Richard' })
-    await salvarLancamento({ ...gasto, formaPagamento: 'voucher' })
+    await salvarCompra({ ...gasto, formaPagamento: 'voucher' })
     expect((await db.profile.get(PERFIL_ID))?.ultimaForma).toBe('voucher')
   })
 
   it('recusa valor zero ou quebrado', async () => {
-    await expect(salvarLancamento({ ...gasto, valor: 0 })).rejects.toThrow()
-    await expect(salvarLancamento({ ...gasto, valor: 10.5 })).rejects.toThrow()
+    await expect(salvarCompra({ ...gasto, valor: 0 })).rejects.toThrow()
+    await expect(salvarCompra({ ...gasto, valor: 10.5 })).rejects.toThrow()
+  })
+})
+
+describe('crédito', () => {
+  const credito = { ...gasto, valor: 60000, formaPagamento: 'credito' as const, cardId: 'c1', faturaInicial: '2026-10' }
+
+  it('parcela em faturas consecutivas, todas com a data da compra', async () => {
+    await salvarCompra({ ...credito, parcelas: 3 })
+    const txs = await db.transactions.orderBy('data').toArray()
+    expect(txs.map((t) => [t.parcelaNumero, t.valor, t.faturaRef, t.data])).toEqual(
+      expect.arrayContaining([
+        [1, 20000, '2026-10', '2026-10-06'],
+        [2, 20000, '2026-11', '2026-10-06'],
+        [3, 20000, '2026-12', '2026-10-06'],
+      ]),
+    )
+    expect(new Set(txs.map((t) => t.parcelaGrupoId)).size).toBe(1)
+  })
+
+  it('à vista no crédito não cria grupo de parcelas', async () => {
+    const [id] = await salvarCompra({ ...credito, parcelas: 1 })
+    const tx = await db.transactions.get(id)
+    expect(tx?.parcelaGrupoId).toBeUndefined()
+    expect(tx?.faturaRef).toBe('2026-10')
+  })
+
+  it('editar a compra toda troca todas as parcelas', async () => {
+    const ids = await salvarCompra({ ...credito, parcelas: 3 })
+    const tx = (await db.transactions.get(ids[1]))!
+    const todas = await lancamentosDaCompra(tx)
+    expect(todas.map((t) => t.parcelaNumero)).toEqual([1, 2, 3])
+    await salvarCompra({ ...credito, valor: 40000, parcelas: 2 }, todas.map((t) => t.id))
+    expect(await db.transactions.count()).toBe(2)
+  })
+
+  it('editar só uma parcela não mexe nas outras', async () => {
+    const ids = await salvarCompra({ ...credito, parcelas: 3 })
+    await salvarParcela(ids[1], { valor: 25000, categoriaId: 'cat-compras' })
+    const txs = await db.transactions.bulkGet(ids)
+    expect(txs.map((t) => t?.valor)).toEqual([20000, 25000, 20000])
+  })
+
+  it('recusa crédito sem cartão', async () => {
+    await expect(salvarCompra({ ...credito, cardId: undefined })).rejects.toThrow()
+  })
+
+  it('cartão: valida os dias e registra/desfaz pagamento', async () => {
+    await expect(salvarCartao({ nome: 'X', diaFechamento: 0, diaVencimento: 10 })).rejects.toThrow()
+    const id = await salvarCartao({ nome: ' ', diaFechamento: 14, diaVencimento: 21 })
+    expect((await cartaoPrincipal())?.nome).toBe('Meu cartão')
+    await registrarPagamento(id, '2026-10', 5000, '2026-10-20')
+    expect(await db.invoicePayments.count()).toBe(1)
+    await desfazerPagamentos(id, '2026-10')
+    expect(await db.invoicePayments.count()).toBe(0)
   })
 })
 
@@ -71,7 +134,7 @@ describe('categorias', () => {
 
   it('arquiva categoria já usada, sem perder o histórico', async () => {
     const id = await salvarCategoria(nova)
-    await salvarLancamento({ ...gasto, categoriaId: id })
+    await salvarCompra({ ...gasto, categoriaId: id })
     expect(await apagarCategoria(id)).toBe('arquivada')
     expect((await db.categories.get(id))?.arquivada).toBe(true)
   })
@@ -85,7 +148,7 @@ describe('backup', () => {
   it('exporta e restaura tudo', async () => {
     await garantirDadosIniciais()
     await salvarPerfil({ nome: 'Richard' })
-    await salvarLancamento(gasto)
+    await salvarCompra(gasto)
     const backup = lerBackup(JSON.stringify(await gerarBackup()))
 
     await Promise.all(db.tables.map((t) => t.clear()))

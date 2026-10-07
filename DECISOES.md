@@ -82,13 +82,41 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   `.rolagem` dentro de `.app`, e a barra é a última linha do layout. A cor da barra de
   status fica em metas fixas por modo do sistema (não é trocada em tempo de execução).
 
-### Próximo: Etapa 2 (cartão de crédito)
+### Etapa 2 concluída (06/10/2026)
 
-1. Ajustes do cartão (nome, dia de fechamento, dia de vencimento, limite opcional).
-2. Atribuição à fatura (funções puras + testes: dia 31, fevereiro, virada de ano, compra
-   no dia do fechamento) e a escolha "Esta fatura / Próxima" no dia do fechamento.
-3. Parcelamento no lançamento; editar/excluir parcela pergunta "só esta ou todas".
-4. Tela Cartão: fatura atual, próximas faturas, compras, registrar pagamento.
+- A fatura é identificada pelo mês em que FECHA (`faturaRef` "2026-10"). Vencimento no
+  mesmo mês se o dia de vencimento é maior que o de fechamento; senão no mês seguinte.
+  Dia 31 em mês curto vira o último dia.
+- Compra antes do fechamento: fatura do mês; depois: a seguinte; NO dia: escolha
+  obrigatória "Esta / Próxima" (sem pré-seleção). No dia do fechamento a fatura ainda
+  está aberta.
+- `faturaRef` é gravado em cada lançamento: mudar os dias do cartão NÃO move compras já
+  lançadas. Editar uma compra sem mudar data/forma mantém a fatura original.
+- Parcelas: um lançamento por parcela, todos com a DATA DA COMPRA (o resumo do mês soma
+  a compra inteira no mês em que foi feita); cada parcela numa fatura consecutiva;
+  sobra de centavos na 1ª. Até 24x. À vista no crédito não cria grupo.
+- No Início a compra parcelada aparece numa linha só ("crédito em 3x"); tocar edita a
+  compra toda. Na tela do cartão, tocar numa parcela pergunta (folha de escolha):
+  "Editar só esta parcela" (valor, categoria, descrição) ou "Editar a compra toda"
+  (regera todas as parcelas). Excluir segue o mesmo modo.
+- Tela Cartão: navegação entre faturas, situação (Aberta/Fechada/Vencida/Paga; quitada
+  antes de fechar já aparece como Paga), datas, barra de limite (esta fatura / outras
+  em aberto / livre), próximas 3 faturas, compras, registrar pagamento (valor total em
+  aberto, data de hoje) e desfazer. Pagamento parcial fica para depois.
+  Pagamento só aparece da fatura atual para trás.
+- Pagar a fatura não entra no resumo do mês (o gasto já contou na data da compra).
+- Um cartão só na interface (o modelo aceita vários). Ajustes em Mais e no nome do cartão.
+
+### Próximo: Etapa 3 (voucher)
+
+1. Ajustes do voucher: valor mensal, dia do crédito, saldo acumula (padrão sim), dias
+   da semana na empresa (padrão seg–sex).
+2. Funções puras + testes: ciclo (do dia do crédito até a véspera do próximo, com dia 31),
+   créditos mensais automáticos, saldo derivado, dias úteis restantes descontando
+   feriados nacionais + Carnaval (seg e ter) + Sexta-feira Santa + Corpus Christi
+   (cálculo da Páscoa), "dá para gastar por dia útil".
+3. Liberar "Voucher" no lançamento, só com categorias permitidas no voucher.
+4. Tela Voucher conforme o layout aprovado.
 
 ### Pendências para confirmar com o Richard
 

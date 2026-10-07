@@ -195,6 +195,253 @@
   }
 }
 
+.lancar-titulo {
+  font-size: 17px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.aviso-inline {
+  font-size: 14.5px;
+  line-height: 1.45;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--folha);
+}
+
+.parcelas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.parcelas-controle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.parcelas-btn {
+  width: 44px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--tecla);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.parcelas-btn:disabled {
+  opacity: 0.4;
+}
+
+.parcelas-qtd {
+  min-width: 44px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.escolha-fatura {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-fatura {
+  padding: 0 4px;
+}
+
+/* ---------- Cartão ---------- */
+
+.cartao-nome {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  font-size: 15px;
+  color: var(--grafite);
+}
+
+.cartao-ajustes {
+  color: var(--grafite);
+  text-decoration: none;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.voltar-atual {
+  margin-left: auto;
+  font-size: 14px;
+  min-height: 32px;
+}
+
+.selo {
+  font-size: 12.5px;
+  font-weight: 650;
+  padding: 3px 8px;
+  border-radius: 7px;
+}
+
+.selo-aberta {
+  background: color-mix(in oklab, var(--acc) 14%, var(--papel));
+  color: var(--acc);
+}
+
+.selo-fechada {
+  background: var(--tecla);
+  color: var(--tinta);
+}
+
+.selo-vencida {
+  background: color-mix(in oklab, var(--negativo) 14%, var(--papel));
+  color: var(--negativo);
+}
+
+.selo-paga {
+  background: color-mix(in oklab, var(--entrada) 14%, var(--papel));
+  color: var(--entrada);
+}
+
+.legenda-espalhada {
+  justify-content: space-between;
+}
+
+.pagamento-feito {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+  border-radius: 14px;
+  background: var(--folha);
+}
+
+.pagamento-titulo {
+  font-weight: 650;
+}
+
+.proximas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.proxima {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  text-align: left;
+  border-radius: 8px;
+}
+
+.proxima-valor {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.proxima-barra {
+  background: color-mix(in oklab, var(--acc) 40%, var(--papel));
+  border-radius: 4px 4px 0 0;
+}
+
+.lanc-botao {
+  width: 100%;
+  text-align: left;
+}
+
+.selo-parcela {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--tecla);
+  color: var(--grafite);
+  vertical-align: 2px;
+}
+
+/* ---------- Folha de escolha ---------- */
+
+.folha-fundo {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.38);
+  animation: folha-fundo 160ms ease-out;
+}
+
+.folha {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 16px calc(env(safe-area-inset-bottom) + 16px);
+  border-radius: 20px 20px 0 0;
+  background: var(--papel);
+  animation: folha-sobe 200ms ease-out;
+}
+
+.folha h2 {
+  font-size: 17px;
+  font-weight: 650;
+  padding: 0 4px;
+}
+
+.folha-opcoes {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--folha);
+  padding: 0 16px;
+}
+
+.folha-opcao {
+  min-height: 52px;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--acc);
+  border-bottom: 1px solid var(--linha);
+}
+
+.folha-opcao:last-child {
+  border-bottom: 0;
+}
+
+.folha-opcao.perigo {
+  color: var(--negativo);
+}
+
+.folha-cancelar {
+  min-height: 52px;
+  border-radius: 14px;
+  background: var(--folha);
+  font-weight: 600;
+}
+
+@keyframes folha-fundo {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes folha-sobe {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
 /* ---------- Início ---------- */
 
 .apoio-forte {
