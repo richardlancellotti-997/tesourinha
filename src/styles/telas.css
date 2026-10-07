@@ -3,7 +3,7 @@
 .lancar {
   max-width: 560px;
   margin: 0 auto;
-  height: 100dvh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 10px;

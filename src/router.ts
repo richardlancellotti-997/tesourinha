@@ -17,10 +17,7 @@ function rotaAtual(): Rota {
 export function useRota(): Rota {
   const [rota, setRota] = useState(rotaAtual)
   useEffect(() => {
-    const aoMudar = () => {
-      setRota(rotaAtual())
-      window.scrollTo(0, 0)
-    }
+    const aoMudar = () => setRota(rotaAtual())
     window.addEventListener('hashchange', aoMudar)
     return () => window.removeEventListener('hashchange', aoMudar)
   }, [])

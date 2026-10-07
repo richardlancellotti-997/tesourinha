@@ -76,6 +76,11 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   "Salvar em Arquivos") e importar (substitui tudo, com confirmação). Lembrete no Início
   após 30 dias sem backup (ou nenhum backup com 10+ lançamentos).
 - Testado em navegador simulando iPhone (Edge headless + playwright-core no scratchpad).
+- Correção após teste no iPhone real (06/10): a barra de navegação saía da tela ao trocar
+  o tema várias vezes (bug do iOS com `position: fixed` em app instalado). Regra daqui em
+  diante: NÃO usar `position: fixed` para elementos presos à tela; a página não rola, só a
+  `.rolagem` dentro de `.app`, e a barra é a última linha do layout. A cor da barra de
+  status fica em metas fixas por modo do sistema (não é trocada em tempo de execução).
 
 ### Próximo: Etapa 2 (cartão de crédito)
 

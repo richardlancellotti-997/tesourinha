@@ -20,10 +20,8 @@ function aplicar({ tema, cor }: TemaSalvo) {
   if (tema === 'auto') delete raiz.dataset.theme
   else raiz.dataset.theme = tema
   raiz.style.setProperty('--accent', cor)
-
-  // Cor da barra de status do iPhone acompanha o fundo
-  const escuro = tema === 'escuro' || (tema === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', escuro ? '#14171B' : '#F6F7F4')
+  // A cor da barra de status NÃO é trocada aqui: no iOS instalado, mudar a meta
+  // theme-color em tempo de execução desloca a barra de navegação para fora da tela.
 }
 
 /** Aplica o tema do perfil e guarda uma cópia para a próxima abertura não piscar. */

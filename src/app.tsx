@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect } from 'preact/hooks'
+import { useEffect, useRef } from 'preact/hooks'
 import { db } from './db/db'
 import { PERFIL_ID } from './db/repo'
 import type { Kind } from './db/types'
@@ -19,12 +19,28 @@ export function App() {
   const rota = useRota()
   const aviso = useAviso()
 
+  const rolagem = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (perfil && perfil !== 'carregando') aplicarTema(perfil)
   }, [perfil])
 
+  // Cada tela nova começa do topo
+  const chaveRota = rota.partes.join('/')
+  useEffect(() => {
+    rolagem.current?.scrollTo(0, 0)
+  }, [chaveRota])
+
   if (perfil === 'carregando') return null
-  if (!perfil) return <BoasVindas />
+  if (!perfil) {
+    return (
+      <div class="app">
+        <div class="rolagem">
+          <BoasVindas />
+        </div>
+      </div>
+    )
+  }
 
   const [tela, param] = rota.partes
   let conteudo
@@ -56,15 +72,19 @@ export function App() {
       aba = 'inicio'
   }
 
+  // Estrutura fixa: só a área de rolagem rola; a barra de navegação é a parte de baixo
+  // do layout (não usa position: fixed, que o iOS instalado desloca).
   return (
-    <>
-      {conteudo}
+    <div class="app">
+      <div class="rolagem" ref={rolagem}>
+        {conteudo}
+      </div>
       {aba && <TabBar ativa={aba} />}
       {aviso && (
-        <div class="aviso" role="status" key={aviso.id}>
+        <div class={`aviso ${aba ? '' : 'aviso-sem-barra'}`} role="status" key={aviso.id}>
           {aviso.texto}
         </div>
       )}
-    </>
+    </div>
   )
 }

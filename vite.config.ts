@@ -12,7 +12,12 @@ export default defineConfig({
     preact(),
     VitePWA({
       registerType: 'autoUpdate',
-      pwaAssets: { config: true },
+      pwaAssets: {
+        config: true,
+        // A cor da barra de status fica em metas fixas no index.html (claro/escuro).
+        // Trocá-la em tempo de execução desloca a barra de navegação no iOS instalado.
+        injectThemeColor: false,
+      },
       manifest: {
         name: 'Tesourinha',
         short_name: 'Tesourinha',
