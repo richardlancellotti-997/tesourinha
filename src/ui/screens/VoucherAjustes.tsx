@@ -2,13 +2,13 @@ import { useEffect, useState } from 'preact/hooks'
 import { estadoDoVoucher, garantirCreditosVoucher, salvarVoucher } from '../../db/repo'
 import type { VoucherConfig } from '../../db/types'
 import { today } from '../../domain/dates'
-import { formatValor, parseBRL } from '../../domain/money'
+import type { Cents } from '../../domain/money'
 import { DIAS_UTEIS_PADRAO } from '../../domain/voucher'
 import { voltar } from '../../router'
 import { avisar } from '../aviso'
+import { CampoLista, CampoValor, OPCOES_DIA } from '../Campos'
 import { Icon } from '../Icon'
 
-const DIAS = Array.from({ length: 31 }, (_, i) => i + 1)
 const SEMANA = [
   ['D', 'Domingo'],
   ['S', 'Segunda'],
@@ -22,13 +22,12 @@ const SEMANA = [
 export function VoucherAjustes() {
   const hoje = today()
   const [cfg, setCfg] = useState<VoucherConfig | null | undefined>(undefined) // undefined = carregando
-  const [valor, setValor] = useState('')
-  const [dia, setDia] = useState(0)
-  const [saldo, setSaldo] = useState('')
-  const [saldoOriginal, setSaldoOriginal] = useState('')
+  const [valor, setValor] = useState<Cents | null>(null)
+  const [dia, setDia] = useState<number | null>(null)
+  const [saldo, setSaldo] = useState<Cents | null>(null)
+  const [saldoOriginal, setSaldoOriginal] = useState<Cents | null>(null)
   const [acumula, setAcumula] = useState(true)
   const [diasEmpresa, setDiasEmpresa] = useState<boolean[]>(DIAS_UTEIS_PADRAO)
-  const [erro, setErro] = useState<string | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -36,32 +35,29 @@ export function VoucherAjustes() {
       const estado = await estadoDoVoucher(hoje)
       setCfg(estado?.cfg ?? null)
       if (estado) {
-        setValor(formatValor(estado.cfg.valorMensal))
+        setValor(estado.cfg.valorMensal)
         setDia(estado.cfg.diaCredito)
         setAcumula(estado.cfg.acumulaSaldo)
         setDiasEmpresa(estado.cfg.diasEmpresa)
-        setSaldo(formatValor(estado.saldo))
-        setSaldoOriginal(formatValor(estado.saldo))
+        setSaldo(estado.saldo)
+        setSaldoOriginal(estado.saldo)
       }
     })()
   }, [hoje])
 
   if (cfg === undefined) return null
 
-  const completo = !!valor.trim() && dia > 0 && (!!cfg || !!saldo.trim()) && diasEmpresa.some(Boolean)
+  const completo = valor !== null && dia !== null && diasEmpresa.some(Boolean)
 
   async function salvar(e: Event) {
     e.preventDefault()
     if (!completo) return
-    const valorCents = parseBRL(valor)
-    const saldoCents = saldo.trim() ? parseBRL(saldo) : null
-    if (valorCents === null) return setErro('O valor por mês não está num formato válido. Use, por exemplo, 1.100,00.')
-    if (saldo.trim() && saldoCents === null) return setErro('O saldo não está num formato válido. Use, por exemplo, 412,80.')
-    const mudouSaldo = !cfg || saldo !== saldoOriginal
+    // Saldo vazio = zero. Na edição, só grava ajuste se o saldo foi mudado.
+    const mudouSaldo = !cfg || (saldo ?? 0) !== (saldoOriginal ?? 0)
     await salvarVoucher(
-      { valorMensal: valorCents, diaCredito: dia, acumulaSaldo: acumula, diasEmpresa },
+      { valorMensal: valor!, diaCredito: dia!, acumulaSaldo: acumula, diasEmpresa },
       hoje,
-      mudouSaldo ? (saldoCents ?? 0) : undefined,
+      mudouSaldo ? (saldo ?? 0) : undefined,
     )
     avisar(cfg ? 'Voucher salvo' : 'Voucher configurado')
     voltar()
@@ -81,42 +77,15 @@ export function VoucherAjustes() {
         <div class="grupo">
           <label class="linha">
             <span>Valor por mês</span>
-            <input
-              class="campo-linha"
-              value={valor}
-              inputMode="decimal"
-              placeholder="0,00"
-              onInput={(e) => {
-                setValor(e.currentTarget.value)
-                setErro(null)
-              }}
-            />
+            <CampoValor valor={valor} aoMudar={setValor} />
           </label>
           <label class="linha">
             <span>Cai no dia</span>
-            <select class="campo-linha" value={dia || ''} onChange={(e) => setDia(Number(e.currentTarget.value))}>
-              <option value="" disabled>
-                Escolha
-              </option>
-              {DIAS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <CampoLista rotulo="Dia do crédito" valor={dia} opcoes={OPCOES_DIA} aoMudar={setDia} />
           </label>
           <label class="linha">
             <span>{cfg ? 'Saldo hoje' : 'Quanto tem hoje'}</span>
-            <input
-              class="campo-linha"
-              value={saldo}
-              inputMode="decimal"
-              placeholder="0,00"
-              onInput={(e) => {
-                setSaldo(e.currentTarget.value)
-                setErro(null)
-              }}
-            />
+            <CampoValor valor={saldo} aoMudar={setSaldo} />
           </label>
           <label class="linha">
             <span>Saldo que sobra acumula</span>
@@ -150,15 +119,14 @@ export function VoucherAjustes() {
             </span>
           </div>
         </div>
-        {erro && <p class="negativo apoio-forte">{erro}</p>}
         <p class="apoio nota-grupo">
           {cfg
             ? 'Se o saldo do app não bater com o do cartão do voucher, corrija o "Saldo hoje": a diferença fica registrada como ajuste.'
-            : 'O crédito mensal entra sozinho no dia escolhido. Mudar o valor depois vale só para os próximos créditos.'}
+            : 'Digite os valores só com números: 72088 vira 720,88. O crédito mensal entra sozinho no dia escolhido; mudar o valor depois vale só para os próximos créditos.'}
         </p>
 
         <button type="submit" class="btn-principal" disabled={!completo}>
-          {completo ? 'Salvar voucher' : 'Preencha valor, dia e saldo'}
+          {completo ? 'Salvar voucher' : 'Preencha o valor por mês e o dia'}
         </button>
       </form>
     </main>

@@ -3,20 +3,18 @@ import { cartaoPrincipal, salvarCartao } from '../../db/repo'
 import type { Card } from '../../db/types'
 import { diaMes, today } from '../../domain/dates'
 import { faturaAberta, fechamentoDe, vencimentoDe } from '../../domain/invoice'
-import { formatValor, parseBRL } from '../../domain/money'
+import type { Cents } from '../../domain/money'
 import { voltar } from '../../router'
 import { avisar } from '../aviso'
+import { CampoLista, CampoValor, OPCOES_DIA } from '../Campos'
 import { Icon } from '../Icon'
-
-const DIAS = Array.from({ length: 31 }, (_, i) => i + 1)
 
 export function CartaoAjustes() {
   const [cartao, setCartao] = useState<Card | null | undefined>(null) // null = carregando
   const [nome, setNome] = useState('')
-  const [fecha, setFecha] = useState(0)
-  const [vence, setVence] = useState(0)
-  const [limite, setLimite] = useState('')
-  const [erro, setErro] = useState<string | null>(null)
+  const [fecha, setFecha] = useState<number | null>(null)
+  const [vence, setVence] = useState<number | null>(null)
+  const [limite, setLimite] = useState<Cents | null>(null)
 
   useEffect(() => {
     cartaoPrincipal().then((c) => {
@@ -25,25 +23,20 @@ export function CartaoAjustes() {
         setNome(c.nome)
         setFecha(c.diaFechamento)
         setVence(c.diaVencimento)
-        setLimite(c.limite ? formatValor(c.limite) : '')
+        setLimite(c.limite ?? null)
       }
     })
   }, [])
 
   if (cartao === null) return null
 
-  const completo = fecha > 0 && vence > 0
-  const exemplo = completo ? faturaAberta(today(), { diaFechamento: fecha, diaVencimento: vence }) : null
+  const cfg = fecha !== null && vence !== null ? { diaFechamento: fecha, diaVencimento: vence } : null
+  const exemplo = cfg ? faturaAberta(today(), cfg) : null
 
   async function salvar(e: Event) {
     e.preventDefault()
-    if (!completo) return
-    const limiteCents = limite.trim() ? parseBRL(limite) : 0
-    if (limiteCents === null) {
-      setErro('O limite não está num formato válido. Use, por exemplo, 4.000,00.')
-      return
-    }
-    await salvarCartao({ nome, diaFechamento: fecha, diaVencimento: vence, limite: limiteCents }, cartao?.id)
+    if (!cfg) return
+    await salvarCartao({ nome, ...cfg, limite: limite ?? 0 }, cartao?.id)
     avisar('Cartão salvo')
     voltar()
   }
@@ -72,51 +65,22 @@ export function CartaoAjustes() {
           </label>
           <label class="linha">
             <span>Fecha no dia</span>
-            <select class="campo-linha" value={fecha || ''} onChange={(e) => setFecha(Number(e.currentTarget.value))}>
-              <option value="" disabled>
-                Escolha
-              </option>
-              {DIAS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <CampoLista rotulo="Dia de fechamento" valor={fecha} opcoes={OPCOES_DIA} aoMudar={setFecha} />
           </label>
           <label class="linha">
             <span>Vence no dia</span>
-            <select class="campo-linha" value={vence || ''} onChange={(e) => setVence(Number(e.currentTarget.value))}>
-              <option value="" disabled>
-                Escolha
-              </option>
-              {DIAS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <CampoLista rotulo="Dia de vencimento" valor={vence} opcoes={OPCOES_DIA} aoMudar={setVence} />
           </label>
           <label class="linha">
             <span>Limite (opcional)</span>
-            <input
-              class="campo-linha"
-              value={limite}
-              inputMode="decimal"
-              placeholder="0,00"
-              onInput={(e) => {
-                setLimite(e.currentTarget.value)
-                setErro(null)
-              }}
-            />
+            <CampoValor valor={limite} aoMudar={setLimite} />
           </label>
         </div>
-        {erro && <p class="negativo apoio-forte">{erro}</p>}
 
-        {exemplo && (
+        {exemplo && cfg && (
           <p class="apoio nota-grupo">
-            A fatura atual fecha em {diaMes(fechamentoDe(exemplo, { diaFechamento: fecha, diaVencimento: vence }))} e vence em{' '}
-            {diaMes(vencimentoDe(exemplo, { diaFechamento: fecha, diaVencimento: vence }))}. Compras feitas no dia do fechamento
-            perguntam em qual fatura entram.
+            A fatura atual fecha em {diaMes(fechamentoDe(exemplo, cfg))} e vence em {diaMes(vencimentoDe(exemplo, cfg))}.
+            Compras feitas no dia do fechamento perguntam em qual fatura entram.
           </p>
         )}
         {cartao && (
@@ -125,8 +89,8 @@ export function CartaoAjustes() {
           </p>
         )}
 
-        <button type="submit" class="btn-principal" disabled={!completo}>
-          {completo ? 'Salvar cartão' : 'Escolha os dias de fechamento e vencimento'}
+        <button type="submit" class="btn-principal" disabled={!cfg}>
+          {cfg ? 'Salvar cartão' : 'Escolha os dias de fechamento e vencimento'}
         </button>
       </form>
     </main>

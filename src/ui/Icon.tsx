@@ -9,6 +9,7 @@ const CAMINHOS: Record<string, string> = {
   somar: 'M12 5v14M5 12h14',
   voltar: 'M15 6l-6 6 6 6',
   avancar: 'M9 6l6 6-6 6',
+  abaixo: 'M6 9l6 6 6-6',
   apagar: 'M9 6h11v12H9l-6-6zM12.5 9.5l5 5M17.5 9.5l-5 5',
   // categorias
   carrinho: 'M3 4h2l2.2 10.5h10.6L20 8H6.2M9 19.5h.01M17 19.5h.01',

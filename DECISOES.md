@@ -145,6 +145,17 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 - No lançamento, Voucher só oferece categorias marcadas "pode ser paga com voucher" e
   mostra o saldo depois do gasto (avisa se passar do saldo).
 
+### Ajustes após teste da Etapa 3 no iPhone (06/10/2026)
+
+- Campos de valor fora do lançamento (limite do cartão, valor e saldo do voucher) usam
+  o mesmo preenchimento pelos centavos (`CampoValor`): só números, 72088 → 720,88,
+  sempre com vírgula. Motivo: o teclado `decimal` do iPhone mostra o separador da
+  região do aparelho (no do Richard, ponto). NÃO usar `pattern` nesses campos: o
+  valor formatado não casa com o padrão e o navegador bloqueia o envio do formulário.
+- Listas (dia do crédito, fechamento, vencimento) usam `CampoLista`: valor escrito à
+  direita com seta; o `<select>` fica invisível por cima (o Safari ignora o alinhamento
+  de select).
+
 ### Próximo: Etapa 4 (recorrências e receitas a receber)
 
 1. Assinaturas e contas fixas: cadastro (nome, valor, dia, forma, categoria), lançamento
