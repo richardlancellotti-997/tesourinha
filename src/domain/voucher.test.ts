@@ -4,6 +4,8 @@ import {
   creditosEntre,
   DIAS_UTEIS_PADRAO,
   diasNaEmpresa,
+  diasUteisDoMes,
+  valorDoCredito,
   feriadosDoAno,
   feriadosEntre,
   pascoa,
@@ -60,6 +62,21 @@ describe('dias na empresa', () => {
   })
   it('intervalo vazio', () => {
     expect(diasNaEmpresa('2026-10-10', '2026-10-09', DIAS_UTEIS_PADRAO)).toBe(0)
+  })
+})
+
+describe('crédito por dia útil', () => {
+  it('novembro de 2026: 21 dias de seg a sex menos Finados e Consciência Negra', () => {
+    expect(diasUteisDoMes('2026-11')).toBe(19)
+  })
+  it('Carnaval conta como dia útil para o crédito; Sexta-feira Santa não', () => {
+    expect(diasUteisDoMes('2027-02')).toBe(20) // Carnaval 08 e 09/02 contam
+    expect(diasUteisDoMes('2026-04')).toBe(20) // 22 dias de seg a sex menos 03/04 (Santa) e 21/04 (Tiradentes)
+    expect(diasUteisDoMes('2026-06')).toBe(22) // Corpus Christi 04/06 conta
+  })
+  it('crédito de 30/10 paga os dias úteis de novembro', () => {
+    expect(valorDoCredito('2026-10-30', 3300, 'seguinte')).toEqual({ valor: 3300 * 19, dias: 19, ym: '2026-11' })
+    expect(valorDoCredito('2026-10-30', 3300, 'mesmo').ym).toBe('2026-10')
   })
 })
 

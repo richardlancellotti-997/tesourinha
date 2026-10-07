@@ -36,7 +36,12 @@ export function Inicio() {
   const categorias = useLiveQuery(() => db.categories.toArray(), [], [] as Category[])
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const totalLancamentos = useLiveQuery(() => db.transactions.count(), [], 0)
-  const aReceber = useLiveQuery(() => db.incomeExpected.where('status').equals('prevista').sortBy('dataPrevista'), [], [])
+  const todasAReceber = useLiveQuery(() => db.incomeExpected.where('status').equals('prevista').sortBy('dataPrevista'), [], [])
+  // "A receber" do mês que está na tela: no mês atual, as do mês e as atrasadas; num mês
+  // futuro, só as esperadas nele; em meses passados, nenhuma.
+  const aReceber = todasAReceber.filter((p) =>
+    ym === mesAtual ? p.dataPrevista <= `${ym}-31` : ym > mesAtual ? p.dataPrevista.startsWith(ym) : false,
+  )
   // Recorrências que ainda vão cair (não gravadas): previstas do mês
   const projecoes = useLiveQuery(
     () => (ym >= mesAtual ? projetarRecorrencias(hoje, `${ym}-31`) : Promise.resolve([] as Transaction[])),
@@ -142,7 +147,9 @@ export function Inicio() {
       {aReceber.length > 0 && (
         <a class="lembrete" href={href('/receitas')}>
           <span>
-            <span class="lembrete-titulo">A receber: {formatValor(totalAReceber)}</span>
+            <span class="lembrete-titulo">
+              {ym === mesAtual ? 'A receber' : `A receber em ${nomeMes(ym)}`}: {formatValor(totalAReceber)}
+            </span>
             <br />
             <span class={`apoio ${atrasadas ? 'negativo' : ''}`}>
               {atrasadas

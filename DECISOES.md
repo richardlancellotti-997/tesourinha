@@ -194,6 +194,25 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   voucher mostram os valores configurados; tocar numa linha abre os ajustes daquela
   parte (sem cadastro: "Cadastrar cartão" / "Configurar voucher").
 
+### Ajustes de 07/10/2026 (pedidos do Richard)
+
+- VÁRIOS CARTÕES na interface (adiantado do pós-V1): Mais → "Cartões de crédito" abre a
+  lista com os dados de cada cartão (nome, fecha, vence, limite) e "Adicionar outro
+  cartão"; "Remover cartão" arquiva (compras e faturas continuam no histórico). Com mais
+  de um cartão, o lançamento e o cadastro de recorrência mostram a escolha do cartão
+  (vem marcado o último usado, `ultimoCartaoId` no perfil; na edição, o da compra, mesmo
+  se removido), e a aba Cartão tem um seletor no topo.
+- VOUCHER POR DIA ÚTIL (substitui o valor fixo por mês): o crédito de cada mês = valor
+  por dia útil × dias úteis do MÊS SEGUINTE ao do crédito (crédito de 30/10 paga
+  novembro). Dia útil para o crédito: segunda a sexta sem os feriados nacionais
+  OFICIAIS (Carnaval e Corpus Christi contam). É independente do "dá para gastar por
+  dia", que continua usando os dias na empresa e sem Carnaval/Corpus Christi.
+  Configuração antiga (valor fixo) continua valendo até o valor por dia ser informado;
+  as telas avisam.
+- "A receber" no Início segue o mês na tela: no mês atual, as do mês e as atrasadas;
+  num mês futuro, só as esperadas nele ("A receber em novembro"); em meses passados,
+  nenhuma.
+
 ### Próximo: Etapa 5 (acabamento)
 
 1. Revisão geral no iPhone com uso real (estados vazios, textos, acessibilidade).

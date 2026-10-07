@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { BackupInvalido, gerarBackup, lerBackup, nomeArquivoBackup, restaurarBackup } from '../../db/backup'
 import { db, nowISO } from '../../db/db'
-import { cartaoPrincipal, PERFIL_ID, salvarPerfil, VOUCHER_ID } from '../../db/repo'
+import { cartoesAtivos, PERFIL_ID, salvarPerfil, VOUCHER_ID } from '../../db/repo'
 import { formatValor } from '../../domain/money'
 import { valorNaData } from '../../domain/recurrence'
 import type { Theme } from '../../db/types'
@@ -48,7 +48,7 @@ function LinhaAjuste({ rotulo, valor, destino }: { rotulo: string; valor: string
 export function Mais() {
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const totalCategorias = useLiveQuery(() => db.categories.filter((c) => !c.arquivada).count(), [], 0)
-  const cartao = useLiveQuery(() => cartaoPrincipal(), [])
+  const cartoes = useLiveQuery(() => cartoesAtivos(), [], [])
   const voucher = useLiveQuery(() => db.voucherConfig.get(VOUCHER_ID), [])
   const recs = useLiveQuery(() => db.recurrences.toArray(), [], [])
   const previstas = useLiveQuery(() => db.incomeExpected.where('status').equals('prevista').toArray(), [], [])
@@ -176,20 +176,13 @@ export function Mais() {
       </section>
 
       <section>
-        <h2 class="rotulo-grupo">Cartão de crédito</h2>
+        <h2 class="rotulo-grupo">Cartões de crédito</h2>
         <div class="grupo">
-          {cartao ? (
-            <>
-              <LinhaAjuste rotulo="Nome" valor={cartao.nome} destino="/cartao/ajustes" />
-              <LinhaAjuste rotulo="Fecha no dia" valor={String(cartao.diaFechamento)} destino="/cartao/ajustes" />
-              <LinhaAjuste rotulo="Vence no dia" valor={String(cartao.diaVencimento)} destino="/cartao/ajustes" />
-              <LinhaAjuste rotulo="Limite" valor={cartao.limite ? formatValor(cartao.limite) : 'Sem limite'} destino="/cartao/ajustes" />
-            </>
-          ) : (
-            <a class="linha linha-acao" href={href('/cartao/ajustes')}>
-              Cadastrar cartão
-            </a>
-          )}
+          <LinhaAjuste
+            rotulo={cartoes.length > 1 ? `${cartoes.length} cartões` : 'Cartões'}
+            valor={cartoes.length ? cartoes.map((c) => c.nome).join(', ') : 'Cadastrar'}
+            destino="/cartoes"
+          />
         </div>
       </section>
 
@@ -198,7 +191,7 @@ export function Mais() {
         <div class="grupo">
           {voucher ? (
             <>
-              <LinhaAjuste rotulo="Valor por mês" valor={formatValor(voucher.valorMensal)} destino="/voucher/ajustes" />
+              <LinhaAjuste rotulo="Valor por dia útil" valor={voucher.valorPorDia !== undefined ? formatValor(voucher.valorPorDia) : 'Informar'} destino="/voucher/ajustes" />
               <LinhaAjuste rotulo="Cai no dia" valor={String(voucher.diaCredito)} destino="/voucher/ajustes" />
               <LinhaAjuste rotulo="Dias na empresa" valor={resumoDias(voucher.diasEmpresa)} destino="/voucher/ajustes" />
               <LinhaAjuste rotulo="Saldo que sobra" valor={voucher.acumulaSaldo ? 'Acumula' : 'Não acumula'} destino="/voucher/ajustes" />

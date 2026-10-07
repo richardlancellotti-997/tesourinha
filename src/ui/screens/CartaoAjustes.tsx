@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
-import { cartaoPrincipal, salvarCartao } from '../../db/repo'
+import { db } from '../../db/db'
+import { arquivarCartao, cartaoPrincipal, salvarCartao } from '../../db/repo'
 import type { Card } from '../../db/types'
 import { diaMes, today } from '../../domain/dates'
 import { faturaAberta, fechamentoDe, vencimentoDe } from '../../domain/invoice'
@@ -9,7 +10,12 @@ import { avisar } from '../aviso'
 import { CampoLista, CampoValor, OPCOES_DIA } from '../Campos'
 import { Icon } from '../Icon'
 
-export function CartaoAjustes() {
+/**
+ * Cadastro e ajustes de um cartão.
+ * /cartao/ajustes/novo = novo; /cartao/ajustes/<id> = esse cartão;
+ * /cartao/ajustes = o primeiro cartão (ou novo, se não houver nenhum).
+ */
+export function CartaoAjustes({ id }: { id?: string }) {
   const [cartao, setCartao] = useState<Card | null | undefined>(null) // null = carregando
   const [nome, setNome] = useState('')
   const [fecha, setFecha] = useState<number | null>(null)
@@ -17,7 +23,8 @@ export function CartaoAjustes() {
   const [limite, setLimite] = useState<Cents | null>(null)
 
   useEffect(() => {
-    cartaoPrincipal().then((c) => {
+    const busca = id === 'novo' ? Promise.resolve(undefined) : id ? db.cards.get(id) : cartaoPrincipal()
+    busca.then((c) => {
       setCartao(c)
       if (c) {
         setNome(c.nome)
@@ -26,7 +33,7 @@ export function CartaoAjustes() {
         setLimite(c.limite ?? null)
       }
     })
-  }, [])
+  }, [id])
 
   if (cartao === null) return null
 
@@ -37,7 +44,18 @@ export function CartaoAjustes() {
     e.preventDefault()
     if (!cfg) return
     await salvarCartao({ nome, ...cfg, limite: limite ?? 0 }, cartao?.id)
-    avisar('Cartão salvo')
+    avisar(cartao ? 'Cartão salvo' : 'Cartão cadastrado')
+    voltar()
+  }
+
+  async function remover() {
+    if (!cartao) return
+    const ok = confirm(
+      `Remover o cartão "${cartao.nome}"? Ele sai das opções de lançamento; as compras e faturas já lançadas continuam no histórico.`,
+    )
+    if (!ok) return
+    await arquivarCartao(cartao.id)
+    avisar('Cartão removido')
     voltar()
   }
 
@@ -93,6 +111,14 @@ export function CartaoAjustes() {
           {cfg ? 'Salvar cartão' : 'Escolha os dias de fechamento e vencimento'}
         </button>
       </form>
+
+      {cartao && (
+        <div class="acoes-rec">
+          <button class="btn-perigo" onClick={remover}>
+            Remover cartão
+          </button>
+        </div>
+      )}
     </main>
   )
 }

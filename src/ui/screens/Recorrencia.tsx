@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'preact/hooks'
 import { db } from '../../db/db'
-import { cartaoPrincipal, encerrarRecorrencia, pausarRecorrencia, salvarRecorrencia } from '../../db/repo'
+import { cartoesAtivos, encerrarRecorrencia, pausarRecorrencia, salvarRecorrencia } from '../../db/repo'
 import type { Card, Category, Kind, PaymentMethod, Recurrence } from '../../db/types'
 import { addDays, addMonths, diaMes, nomeMes, today } from '../../domain/dates'
 import type { Cents } from '../../domain/money'
@@ -21,7 +21,8 @@ const FORMAS: { id: PaymentMethod; nome: string }[] = [
 export function Recorrencia({ id, tipoInicial }: { id?: string; tipoInicial?: Kind }) {
   const hoje = today()
   const categorias = useLiveQuery(() => db.categories.orderBy('ordem').toArray(), [], [] as Category[])
-  const cartao = useLiveQuery(() => cartaoPrincipal(), [], null as Card | null | undefined)
+  const cartoes = useLiveQuery(() => cartoesAtivos(), [], null as Card[] | null)
+  const [cartaoId, setCartaoId] = useState<string | null>(null)
 
   const [original, setOriginal] = useState<Recurrence | null | undefined>(id ? undefined : null)
   const [tipo, setTipo] = useState<Kind>(tipoInicial ?? 'despesa')
@@ -44,6 +45,7 @@ export function Recorrencia({ id, tipoInicial }: { id?: string; tipoInicial?: Ki
       setForma(r.formaPagamento)
       setCatId(r.categoriaId)
       setEscolha(r.escolhaFechamento ?? null)
+      setCartaoId(r.cardId ?? null)
     })
   }, [id])
 
@@ -59,6 +61,7 @@ export function Recorrencia({ id, tipoInicial }: { id?: string; tipoInicial?: Ki
     )
   }
 
+  const cartao = cartoes === null ? null : (cartoes.find((c) => c.id === cartaoId) ?? cartoes[0])
   const ehCredito = tipo === 'despesa' && forma === 'credito'
   const ehVoucher = tipo === 'despesa' && forma === 'voucher'
   const opcoes = categorias.filter(
@@ -183,10 +186,25 @@ export function Recorrencia({ id, tipoInicial }: { id?: string; tipoInicial?: Ki
         {ehCredito && cartao === undefined && (
           <p class="aviso-inline">
             Para usar o crédito, cadastre o cartão primeiro.{' '}
-            <a class="link-acao" href={href('/cartao/ajustes')}>
+            <a class="link-acao" href={href('/cartao/ajustes/novo')}>
               Cadastrar cartão
             </a>
           </p>
+        )}
+
+        {ehCredito && cartoes && cartoes.length > 1 && (
+          <div class="opcoes opcoes-cartao" role="group" aria-label="Cartão">
+            {cartoes.map((c) => (
+              <button
+                type="button"
+                key={c.id}
+                aria-pressed={c.id === cartao?.id}
+                onClick={() => (setCartaoId(c.id), setEscolha(null))}
+              >
+                {c.nome}
+              </button>
+            ))}
+          </div>
         )}
 
         {diaDoFechamento && proxima && (

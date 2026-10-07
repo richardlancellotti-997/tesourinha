@@ -19,6 +19,8 @@ export interface Profile extends BaseRecord {
   ultimoBackupEm?: string
   /** Última forma de pagamento usada num gasto: vem pré-selecionada no próximo. */
   ultimaForma?: PaymentMethod
+  /** Último cartão usado numa compra no crédito: vem pré-selecionado no próximo. */
+  ultimoCartaoId?: string
 }
 
 export interface Category extends BaseRecord {
@@ -91,6 +93,11 @@ export interface Recurrence extends BaseRecord {
 }
 
 export interface VoucherConfig extends BaseRecord {
+  /** Valor recebido por dia útil (desde 07/10/2026). O crédito do mês = valor × dias úteis. */
+  valorPorDia?: Cents
+  /** Mês cujos dias úteis o crédito paga: o seguinte (padrão) ou o próprio */
+  mesDoCredito?: 'seguinte' | 'mesmo'
+  /** Modelo antigo (valor fixo por mês): usado só enquanto `valorPorDia` não for informado */
   valorMensal: Cents
   diaCredito: number
   acumulaSaldo: boolean

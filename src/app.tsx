@@ -12,6 +12,7 @@ import { Receitas } from './ui/screens/Receitas'
 import { Recorrencia } from './ui/screens/Recorrencia'
 import { Cartao } from './ui/screens/Cartao'
 import { CartaoAjustes } from './ui/screens/CartaoAjustes'
+import { Cartoes } from './ui/screens/Cartoes'
 import { Categorias } from './ui/screens/Categorias'
 import { Voucher } from './ui/screens/Voucher'
 import { VoucherAjustes } from './ui/screens/VoucherAjustes'
@@ -69,7 +70,7 @@ export function App() {
       )
       break
     case 'cartao':
-      conteudo = param === 'ajustes' ? <CartaoAjustes /> : <Cartao />
+      conteudo = param === 'ajustes' ? <CartaoAjustes key={rota.partes[2] ?? ''} id={rota.partes[2]} /> : <Cartao />
       aba = 'cartao'
       break
     case 'voucher':
@@ -82,6 +83,10 @@ export function App() {
       break
     case 'categorias':
       conteudo = <Categorias />
+      aba = 'mais'
+      break
+    case 'cartoes':
+      conteudo = <Cartoes />
       aba = 'mais'
       break
     case 'assinaturas':

@@ -2,7 +2,7 @@ import Dexie from 'dexie'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'preact/hooks'
 import { db } from '../../db/db'
-import { cartaoPrincipal, desfazerPagamentos, projetarRecorrencias, registrarPagamento } from '../../db/repo'
+import { cartoesAtivos, desfazerPagamentos, projetarRecorrencias, registrarPagamento } from '../../db/repo'
 import type { Card, Category, InvoicePayment, Transaction } from '../../db/types'
 import { addMonths, diaMes, diaMesSemana, nomeMes, today, type YearMonth } from '../../domain/dates'
 import {
@@ -25,13 +25,19 @@ const ROTULO_SITUACAO: Record<SituacaoFatura, string> = {
   paga: 'Paga',
 }
 
-// A fatura escolhida continua a mesma ao voltar de outra tela.
+// A fatura e o cartão escolhidos continuam os mesmos ao voltar de outra tela.
 let faturaLembrada: YearMonth | null = null
+let cartaoLembrado: string | null = null
 
 export function Cartao() {
   const hoje = today()
-  const cartao = useLiveQuery(() => cartaoPrincipal(), [], null as Card | null | undefined)
+  const cartoes = useLiveQuery(() => cartoesAtivos(), [], null as Card[] | null)
+  const [cartaoId, setCartaoId] = useState<string | null>(cartaoLembrado)
+  const cartao = cartoes === null ? null : (cartoes.find((c) => c.id === cartaoId) ?? cartoes[0])
   const cardId = cartao?.id ?? ''
+  useEffect(() => {
+    cartaoLembrado = cartaoId
+  }, [cartaoId])
   const txs = useLiveQuery(
     () => db.transactions.where('[cardId+faturaRef]').between([cardId, Dexie.minKey], [cardId, Dexie.maxKey]).toArray(),
     [cardId],
@@ -60,7 +66,7 @@ export function Cartao() {
       <main class="tela">
         <h1 class="titulo-grande">Cartão de crédito</h1>
         <p class="em-breve">Cadastre o cartão para acompanhar a fatura, as parcelas e o vencimento.</p>
-        <a class="btn-principal" href={href('/cartao/ajustes')}>
+        <a class="btn-principal" href={href('/cartao/ajustes/novo')}>
           Cadastrar cartão
         </a>
       </main>
@@ -128,6 +134,15 @@ export function Cartao() {
 
   return (
     <main class="tela">
+      {cartoes!.length > 1 && (
+        <div class="alternador alternador-cartoes" role="group" aria-label="Cartão">
+          {cartoes!.map((c) => (
+            <button key={c.id} aria-pressed={c.id === cartao.id} onClick={() => (setCartaoId(c.id), setRef(null))}>
+              {c.nome}
+            </button>
+          ))}
+        </div>
+      )}
       <div class="topo">
         <button class="btn-icone mes-anterior" aria-label="Fatura anterior" onClick={() => setRef(addMonths(ref, -1))}>
           <Icon nome="voltar" />
@@ -140,7 +155,7 @@ export function Cartao() {
 
       <section class="secao resumo" aria-label="Resumo da fatura">
         <div class="cartao-nome">
-          <a class="cartao-ajustes" href={href('/cartao/ajustes')}>
+          <a class="cartao-ajustes" href={href(`/cartao/ajustes/${cartao.id}`)}>
             {cartao.nome}
           </a>
           <span class={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>

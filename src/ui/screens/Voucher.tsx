@@ -7,6 +7,7 @@ import { diaMes, rotuloData, today } from '../../domain/dates'
 import { formatValor } from '../../domain/money'
 import { ehDiaNaEmpresa, feriadosEntre } from '../../domain/voucher'
 import { href } from '../../router'
+import { Icon } from '../Icon'
 
 export function Voucher() {
   const hoje = today()
@@ -83,6 +84,17 @@ export function Voucher() {
           Ciclo de {diaMes(ciclo.inicio)} a {diaMes(ciclo.fim)}
         </a>
       </div>
+
+      {cfg.valorPorDia === undefined && (
+        <a class="lembrete" href={href('/voucher/ajustes')}>
+          <span>
+            <span class="lembrete-titulo">Informe o valor por dia útil</span>
+            <br />
+            <span class="apoio">O crédito passa a ser calculado pelos dias úteis de cada mês.</span>
+          </span>
+          <Icon nome="avancar" />
+        </a>
+      )}
 
       <section class="secao resumo" aria-label="Saldo do voucher">
         <div>

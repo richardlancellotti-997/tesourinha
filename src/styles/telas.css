@@ -255,6 +255,15 @@
 
 /* ---------- Cartão ---------- */
 
+.alternador-cartoes {
+  overflow-x: auto;
+  margin-top: 6px;
+}
+
+.alternador-cartoes button {
+  white-space: nowrap;
+}
+
 .cartao-nome {
   display: flex;
   align-items: center;

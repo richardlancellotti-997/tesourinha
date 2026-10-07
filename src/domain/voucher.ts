@@ -153,3 +153,38 @@ export function ritmoDoCiclo(saldo: Cents, hoje: LocalDate, ciclo: Ciclo, diasEm
 }
 
 export const DIAS_UTEIS_PADRAO = [false, true, true, true, true, true, false]
+
+/**
+ * Dias úteis para o CRÉDITO do voucher (decisão de 07/10/2026): segunda a sexta sem os
+ * feriados nacionais oficiais. Carnaval e Corpus Christi (ponto facultativo) CONTAM.
+ * É independente dos dias na empresa, usados só no "dá para gastar por dia".
+ */
+export function diasUteisDoMes(ym: string): number {
+  const [y, m] = ym.split('-').map(Number)
+  const oficiais = new Set(
+    feriadosDoAno(y)
+      .filter((f) => f.nome !== 'Carnaval' && f.nome !== 'Corpus Christi')
+      .map((f) => f.data),
+  )
+  let n = 0
+  for (let d = makeDate(y, m, 1); d.startsWith(ym); d = addDays(d, 1)) {
+    const dia = diaDaSemana(d)
+    if (dia >= 1 && dia <= 5 && !oficiais.has(d)) n++
+  }
+  return n
+}
+
+export type MesDoCredito = 'seguinte' | 'mesmo'
+
+/** Mês cujos dias úteis o crédito paga (crédito de 30/10 → novembro, no modelo "seguinte"). */
+export function mesPagoPeloCredito(dataCredito: LocalDate, mes: MesDoCredito): string {
+  const ym = yearMonthOf(dataCredito)
+  return mes === 'seguinte' ? addMonths(ym, 1) : ym
+}
+
+/** Valor do crédito = valor por dia útil × dias úteis do mês que ele paga. */
+export function valorDoCredito(dataCredito: LocalDate, valorPorDia: Cents, mes: MesDoCredito): { valor: Cents; dias: number; ym: string } {
+  const ym = mesPagoPeloCredito(dataCredito, mes)
+  const dias = diasUteisDoMes(ym)
+  return { valor: valorPorDia * dias, dias, ym }
+}

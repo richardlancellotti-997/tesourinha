@@ -4,7 +4,9 @@ import { db } from './db'
 import { BackupInvalido, gerarBackup, lerBackup, restaurarBackup } from './backup'
 import {
   apagarCategoria,
+  arquivarCartao,
   cartaoPrincipal,
+  cartoesAtivos,
   desfazerPagamentos,
   encerrarRecorrencia,
   garantirRecorrencias,
@@ -130,6 +132,18 @@ describe('crédito', () => {
     expect(txs.map((t) => t?.valor)).toEqual([20000, 25000, 20000])
   })
 
+  it('vários cartões: cada compra vai para o seu, e o último usado fica lembrado', async () => {
+    await salvarPerfil({ nome: 'Richard' })
+    const a = await salvarCartao({ nome: 'A', diaFechamento: 14, diaVencimento: 21 })
+    const b = await salvarCartao({ nome: 'B', diaFechamento: 28, diaVencimento: 5 })
+    const [idB] = await salvarCompra({ ...credito, cardId: b, faturaInicial: '2026-10' })
+    expect((await db.transactions.get(idB))?.mesBalanco).toBe('2026-11') // B vence no mês seguinte
+    expect((await db.profile.get(PERFIL_ID))?.ultimoCartaoId).toBe(b)
+    await arquivarCartao(a)
+    expect((await cartoesAtivos()).map((c) => c.nome)).toEqual(['B'])
+    expect(await db.transactions.count()).toBe(1)
+  })
+
   it('recusa crédito sem cartão', async () => {
     await expect(salvarCompra({ ...credito, cardId: undefined })).rejects.toThrow()
   })
@@ -167,7 +181,7 @@ describe('categorias', () => {
 })
 
 describe('voucher', () => {
-  const cfg = { valorMensal: 110000, diaCredito: 20, acumulaSaldo: true, diasEmpresa: [false, true, true, true, true, true, false] }
+  const cfg = { valorPorDia: 5000, mesDoCredito: 'mesmo' as const, diaCredito: 20, acumulaSaldo: true, diasEmpresa: [false, true, true, true, true, true, false] }
   const gastoVoucher = { ...gasto, formaPagamento: 'voucher' as const }
 
   it('saldo inicial, gastos e créditos mensais automáticos', async () => {
@@ -179,7 +193,7 @@ describe('voucher', () => {
     await garantirCreditosVoucher('2026-11-20')
     await garantirCreditosVoucher('2026-11-20')
     expect(await db.voucherCredits.where('data').equals('2026-10-20').count()).toBe(1)
-    expect((await estadoDoVoucher('2026-11-20'))?.saldo).toBe(41280 + 220000)
+    expect((await estadoDoVoucher('2026-11-20'))?.saldo).toBe(41280 + 105000 + 95000) // 21 dias úteis de outubro e 19 de novembro × 50,00
   })
 
   it('o gasto no voucher fica no mês da data e não entra no crédito do cartão', async () => {
@@ -187,6 +201,13 @@ describe('voucher', () => {
     const tx = await db.transactions.get(id)
     expect(tx?.mesBalanco).toBe('2026-10')
     expect(tx?.faturaRef).toBeUndefined()
+  })
+
+  it('crédito do dia 30 paga os dias úteis do mês seguinte (padrão)', async () => {
+    await salvarVoucher({ ...cfg, mesDoCredito: undefined, diaCredito: 30, valorPorDia: 3300 }, '2026-10-07', 0)
+    await garantirCreditosVoucher('2026-10-30')
+    const credito = await db.voucherCredits.where('data').equals('2026-10-30').first()
+    expect(credito?.valor).toBe(3300 * 19) // novembro: 19 dias úteis
   })
 
   it('corrigir o saldo grava a diferença como ajuste', async () => {
@@ -199,7 +220,7 @@ describe('voucher', () => {
   it('sem acumular, o saldo do ciclo anterior não passa para o novo', async () => {
     await salvarVoucher({ ...cfg, acumulaSaldo: false }, '2026-10-05', 50000)
     await garantirCreditosVoucher('2026-10-21')
-    expect((await estadoDoVoucher('2026-10-21'))?.saldo).toBe(110000)
+    expect((await estadoDoVoucher('2026-10-21'))?.saldo).toBe(105000)
   })
 })
 

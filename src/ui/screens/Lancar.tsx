@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'preact/hooks'
 import { db } from '../../db/db'
 import {
-  cartaoPrincipal,
+  cartoesAtivos,
   estadoDoVoucher,
   excluirLancamentos,
   excluirReceitaPrevista,
@@ -64,7 +64,10 @@ export function Lancar({
   const hoje = today()
   const perfil = useLiveQuery(() => db.profile.get(PERFIL_ID), [])
   const categorias = useLiveQuery(() => db.categories.orderBy('ordem').toArray(), [], [] as Category[])
-  const cartao = useLiveQuery(() => cartaoPrincipal(), [], null as Card | null | undefined)
+  const cartoes = useLiveQuery(() => cartoesAtivos(), [], null as Card[] | null)
+  // Cartão escolhido; sem escolha: o da compra (na edição), o último usado ou o primeiro
+  const [cartaoId, setCartaoId] = useState<string | null>(null)
+  const [cartaoRemovido, setCartaoRemovido] = useState<Card | null>(null)
   const voucher = useLiveQuery(() => estadoDoVoucher(hoje), [hoje], undefined as EstadoVoucher | null | undefined)
 
   const [tipo, setTipo] = useState<Kind>(tipoInicial ?? 'despesa')
@@ -114,7 +117,9 @@ export function Lancar({
       setForma(tx.formaPagamento)
       setCatId(tx.categoriaId)
       setParcelas(soParcela ? 1 : (tx.parcelaTotal ?? 1))
-      const card = await cartaoPrincipal()
+      const card = tx.cardId ? await db.cards.get(tx.cardId) : undefined
+      if (tx.cardId) setCartaoId(tx.cardId)
+      if (card?.arquivado) setCartaoRemovido(card)
       if (tx.formaPagamento === 'credito' && card && lista[0].faturaRef) {
         const padrao = faturaPelaData(tx.data, card)
         if (padrao.diaDeFechamento) setEscolhaFatura(lista[0].faturaRef === padrao.ref ? 'esta' : 'proxima')
@@ -148,6 +153,14 @@ export function Lancar({
   // (mesmo que o dia de fechamento do cartão tenha mudado depois).
   const manterFatura =
     modo === 'compra' && original?.formaPagamento === 'credito' && original.data === data && !!original.faturaRef
+  // Na edição, um cartão já removido continua disponível para a própria compra
+  const opcoesCartao = cartoes === null ? null : cartaoRemovido ? [...cartoes, cartaoRemovido] : cartoes
+  const cartao: Card | null | undefined =
+    opcoesCartao === null
+      ? null
+      : (opcoesCartao.find((c) => c.id === cartaoId) ??
+        opcoesCartao.find((c) => c.id === perfil?.ultimoCartaoId) ??
+        opcoesCartao[0])
   const padrao = ehCredito && cartao ? faturaPelaData(data, cartao) : null
   let faturaInicial: YearMonth | null = null
   if (padrao && cartao) {
@@ -415,10 +428,24 @@ export function Lancar({
         {ehCredito && modo !== 'parcela' && !cartao && cartao !== null && (
           <p class="aviso-inline">
             Para lançar no crédito, cadastre o cartão primeiro.{' '}
-            <a class="link-acao" href={href('/cartao/ajustes')}>
+            <a class="link-acao" href={href('/cartao/ajustes/novo')}>
               Cadastrar cartão
             </a>
           </p>
+        )}
+
+        {ehCredito && modo !== 'parcela' && opcoesCartao && opcoesCartao.length > 1 && (
+          <div class="opcoes opcoes-cartao" role="group" aria-label="Cartão">
+            {opcoesCartao.map((c) => (
+              <button
+                key={c.id}
+                aria-pressed={c.id === cartao?.id}
+                onClick={() => (setCartaoId(c.id), setEscolhaFatura(null))}
+              >
+                {c.nome}
+              </button>
+            ))}
+          </div>
         )}
 
         {ehCredito && modo !== 'parcela' && cartao && (

@@ -5,7 +5,7 @@ import type { Cents } from '../domain/money'
 import { addDays, yearMonthOf, type LocalDate, type YearMonth } from '../domain/dates'
 import { faturaDaCompra, faturaPelaData, mesNoBalanco, parcelar } from '../domain/invoice'
 import { comNovoValor, datasEntre, valorNaData } from '../domain/recurrence'
-import { cicloDe, creditosEntre, ritmoDoCiclo, saldoVoucher, type Ciclo, type Ritmo } from '../domain/voucher'
+import { cicloDe, creditosEntre, ritmoDoCiclo, saldoVoucher, valorDoCredito, type Ciclo, type Ritmo } from '../domain/voucher'
 import { db, newId, nowISO } from './db'
 import type { Card, Category, Kind, PaymentMethod, Profile, Recurrence, Transaction, VoucherConfig } from './types'
 
@@ -108,7 +108,10 @@ export async function salvarCompra(dados: DadosCompra, substituir: string[] = []
     await db.transactions.bulkDelete(substituir)
     await db.transactions.bulkAdd(novos)
     if (dados.tipo === 'despesa') {
-      await db.profile.update(PERFIL_ID, { ultimaForma: dados.formaPagamento })
+      await db.profile.update(PERFIL_ID, {
+        ultimaForma: dados.formaPagamento,
+        ...(dados.formaPagamento === 'credito' ? { ultimoCartaoId: dados.cardId } : {}),
+      })
     }
     return novos.map((t) => t.id)
   })
@@ -148,9 +151,21 @@ export interface DadosCartao {
   limite?: Cents
 }
 
-/** Na V1 há um cartão só (o modelo já aceita vários). */
+/** Cartões em uso, na ordem em que foram cadastrados. */
+export async function cartoesAtivos(): Promise<Card[]> {
+  return (await db.cards.toArray())
+    .filter((c) => !c.arquivado)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.nome.localeCompare(b.nome))
+}
+
+/** Primeiro cartão em uso (padrão quando só há um). */
 export async function cartaoPrincipal(): Promise<Card | undefined> {
-  return (await db.cards.toArray()).find((c) => !c.arquivado)
+  return (await cartoesAtivos())[0]
+}
+
+/** Remove o cartão das opções; compras e faturas já lançadas continuam no histórico. */
+export async function arquivarCartao(id: string): Promise<void> {
+  await db.cards.update(id, { arquivado: true, updatedAt: nowISO() })
 }
 
 export async function salvarCartao(dados: DadosCartao, id?: string): Promise<string> {
@@ -173,7 +188,8 @@ export async function salvarCartao(dados: DadosCartao, id?: string): Promise<str
 export const VOUCHER_ID = 'voucher'
 
 export interface DadosVoucher {
-  valorMensal: Cents
+  valorPorDia: Cents
+  mesDoCredito?: 'seguinte' | 'mesmo'
   diaCredito: number
   acumulaSaldo: boolean
   diasEmpresa: boolean[]
@@ -187,12 +203,13 @@ export async function salvarVoucher(dados: DadosVoucher, hoje: LocalDate, saldoH
   if (!Number.isInteger(dados.diaCredito) || dados.diaCredito < 1 || dados.diaCredito > 31) {
     throw new RangeError('Dia precisa estar entre 1 e 31')
   }
-  if (!Number.isInteger(dados.valorMensal) || dados.valorMensal < 0) throw new RangeError('Valor inválido')
+  if (!Number.isInteger(dados.valorPorDia) || dados.valorPorDia < 0) throw new RangeError('Valor inválido')
   const agora = nowISO()
+  const campos = { ...dados, mesDoCredito: dados.mesDoCredito ?? ('seguinte' as const) }
   await db.transaction('rw', db.voucherConfig, db.voucherCredits, db.transactions, async () => {
     const atual = await db.voucherConfig.get(VOUCHER_ID)
     if (!atual) {
-      await db.voucherConfig.add({ ...dados, id: VOUCHER_ID, inicio: hoje, createdAt: agora, updatedAt: agora })
+      await db.voucherConfig.add({ ...campos, valorMensal: 0, id: VOUCHER_ID, inicio: hoje, createdAt: agora, updatedAt: agora })
       await db.voucherCredits.add({
         id: newId(),
         data: hoje,
@@ -203,7 +220,7 @@ export async function salvarVoucher(dados: DadosVoucher, hoje: LocalDate, saldoH
       })
       return
     }
-    await db.voucherConfig.update(VOUCHER_ID, { ...dados, updatedAt: agora })
+    await db.voucherConfig.update(VOUCHER_ID, { ...campos, updatedAt: agora })
     if (saldoHoje !== undefined) {
       await garantirCreditosVoucher(hoje)
       const saldo = (await estadoDoVoucher(hoje))!.saldo
@@ -221,6 +238,12 @@ export async function salvarVoucher(dados: DadosVoucher, hoje: LocalDate, saldoH
   })
 }
 
+/** Crédito que cai numa data: valor por dia útil × dias úteis do mês que ele paga. */
+export function valorDoCreditoVoucher(cfg: VoucherConfig, data: LocalDate): Cents {
+  if (cfg.valorPorDia === undefined) return cfg.valorMensal // configuração antiga, ainda sem valor por dia
+  return valorDoCredito(data, cfg.valorPorDia, cfg.mesDoCredito ?? 'seguinte').valor
+}
+
 /** Grava os créditos mensais que já deviam ter caído (pode rodar quantas vezes for preciso). */
 export async function garantirCreditosVoucher(hoje: LocalDate): Promise<void> {
   await db.transaction('rw', db.voucherConfig, db.voucherCredits, async () => {
@@ -232,7 +255,7 @@ export async function garantirCreditosVoucher(hoje: LocalDate): Promise<void> {
     const novas = creditosEntre(desde, hoje, cfg.diaCredito)
     if (novas.length) {
       await db.voucherCredits.bulkAdd(
-        novas.map((data) => ({ id: newId(), data, valor: cfg.valorMensal, origem: 'mensal' as const, createdAt: agora, updatedAt: agora })),
+        novas.map((data) => ({ id: newId(), data, valor: valorDoCreditoVoucher(cfg, data), origem: 'mensal' as const, createdAt: agora, updatedAt: agora })),
       )
     }
   })
