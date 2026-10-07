@@ -43,6 +43,8 @@ export interface Transaction extends BaseRecord {
   tipo: Kind
   valor: Cents
   data: LocalDate
+  /** Mês em que conta no balanço (crédito: mês do vencimento da fatura). Desde o esquema 2. */
+  mesBalanco: YearMonth
   categoriaId: string
   descricao?: string
   formaPagamento: PaymentMethod

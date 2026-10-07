@@ -79,6 +79,20 @@ export function parcelar(total: Cents, quantidade: number, faturaInicial: YearMo
   }))
 }
 
+/**
+ * Mês em que o lançamento conta no balanço (decisão de 06/10/2026):
+ * - crédito (à vista ou parcela): mês em que a fatura dele VENCE, quando o dinheiro sai;
+ * - débito/Pix, voucher e receitas: mês da data.
+ * Sem a configuração do cartão, usa o mês da própria fatura.
+ */
+export function mesNoBalanco(
+  l: { formaPagamento: string; data: LocalDate; faturaRef?: YearMonth },
+  cfg?: ConfigCartao,
+): YearMonth {
+  if (l.formaPagamento !== 'credito' || !l.faturaRef) return yearMonthOf(l.data)
+  return cfg ? yearMonthOf(vencimentoDe(l.faturaRef, cfg)) : l.faturaRef
+}
+
 export type SituacaoFatura = 'aberta' | 'fechada' | 'vencida' | 'paga'
 
 export function situacaoDaFatura(

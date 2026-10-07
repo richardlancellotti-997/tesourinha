@@ -8,6 +8,11 @@ import './styles/telas.css'
 
 aplicarTemaInicial()
 
+// Sem zoom de pinça: o Safari do iPhone ignora user-scalable=no, então o gesto é bloqueado aqui.
+for (const evento of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(evento, (e) => e.preventDefault(), { passive: false })
+}
+
 garantirDadosIniciais().finally(() => {
   render(<App />, document.getElementById('app')!)
 })

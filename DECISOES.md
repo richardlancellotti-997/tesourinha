@@ -37,8 +37,17 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
 
 ## Cartão de crédito
 
-- O resumo do mês conta o crédito pela DATA DA COMPRA; a tela do cartão mostra o
-  impacto em cada fatura.
+- ~~O resumo do mês conta o crédito pela data da compra~~ (substituído em 06/10/2026):
+  TODO gasto no crédito (parcelado ou à vista) conta no balanço do mês em que a fatura
+  dele VENCE; cada parcela no seu mês. Débito/Pix, voucher e receitas: mês da data.
+  Campo `mesBalanco` gravado em cada lançamento (esquema 2), fixo após gravar.
+- A compra continua listada no mês em que foi feita, com selo "8x" e o texto
+  "1ª de 8 parcelas, total 439,00"; o valor da linha é o que entra no mês. Se nada
+  entra no mês (compra depois do fechamento), o valor aparece em cinza com "conta em
+  novembro" / "8x, a partir de novembro".
+- Nas barras "Para onde foi", a parte que veio de parcelas aparece em tom claro, com
+  legenda. Nos meses seguintes há a seção "Parcelas de compras anteriores" (parcela
+  2 de 8, compra de 06/10). O Início navega para meses futuros ("Previsto para novembro").
 - Compra no crédito feita no DIA DO FECHAMENTO: o app pergunta "Esta fatura" ou
   "Próxima fatura", sem opção pré-selecionada; não salva sem a escolha.
   Nos demais dias a fatura é atribuída automaticamente.
@@ -106,6 +115,13 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   Pagamento só aparece da fatura atual para trás.
 - Pagar a fatura não entra no resumo do mês (o gasto já contou na data da compra).
 - Um cartão só na interface (o modelo aceita vários). Ajustes em Mais e no nome do cartão.
+
+### Ajustes após teste do Etapa 2 no iPhone (06/10/2026)
+
+- Sem seleção de texto ao segurar (exceto em campos de digitação) e sem zoom
+  (viewport `user-scalable=no` + bloqueio do gesto de pinça + `touch-action: manipulation`).
+- Balanço do crédito pelo mês do vencimento (ver "Lançamento" acima) e esquema 2 do
+  banco com migração automática dos dados e dos backups da versão 1.
 
 ### Próximo: Etapa 3 (voucher)
 

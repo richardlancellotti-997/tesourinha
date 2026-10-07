@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { mesNoBalanco } from '../domain/invoice'
 import type {
   Card,
   Category,
@@ -18,7 +19,15 @@ import type {
  *   3. nunca altere uma versão já publicada.
  * O número também vai no arquivo de backup.
  */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
+
+/** Preenche `mesBalanco` (esquema 2) em lançamentos antigos. Usado na migração e no backup. */
+export function preencherMesBalanco(transacoes: Transaction[], cartoes: Card[]): void {
+  for (const t of transacoes) {
+    if (t.mesBalanco) continue
+    t.mesBalanco = mesNoBalanco(t, cartoes.find((c) => c.id === t.cardId))
+  }
+}
 
 export class TesourinhaDB extends Dexie {
   profile!: EntityTable<Profile, 'id'>
@@ -46,6 +55,20 @@ export class TesourinhaDB extends Dexie {
       voucherCredits: 'id, data',
       invoicePayments: 'id, [cardId+faturaRef]',
     })
+
+    // Versão 2: mês em que cada lançamento conta no balanço (crédito pelo vencimento).
+    this.version(2)
+      .stores({
+        transactions:
+          'id, data, mesBalanco, tipo, categoriaId, formaPagamento, [cardId+faturaRef], parcelaGrupoId, recorrenciaId',
+      })
+      .upgrade(async (tx) => {
+        const cartoes = (await tx.table('cards').toArray()) as Card[]
+        await tx
+          .table('transactions')
+          .toCollection()
+          .modify((t: Transaction) => preencherMesBalanco([t], cartoes))
+      })
   }
 }
 

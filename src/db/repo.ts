@@ -3,7 +3,7 @@
 import { CATEGORIAS_PADRAO, type CorCategoria, type IconeCategoria } from '../domain/categories'
 import type { Cents } from '../domain/money'
 import type { LocalDate, YearMonth } from '../domain/dates'
-import { parcelar } from '../domain/invoice'
+import { mesNoBalanco, parcelar } from '../domain/invoice'
 import { db, newId, nowISO } from './db'
 import type { Card, Category, Kind, PaymentMethod, Profile, Transaction } from './types'
 
@@ -76,19 +76,21 @@ export async function salvarCompra(dados: DadosCompra, substituir: string[] = []
     formaPagamento: dados.formaPagamento,
   }
 
-  return db.transaction('rw', db.transactions, db.profile, async () => {
+  return db.transaction('rw', db.transactions, db.profile, db.cards, async () => {
     const antigos = (await db.transactions.bulkGet(substituir)).filter((t): t is Transaction => !!t)
     const createdAt = antigos.map((t) => t.createdAt).sort()[0] ?? agora
 
     let novos: Transaction[]
     if (dados.tipo === 'despesa' && dados.formaPagamento === 'credito') {
       if (!dados.cardId || !dados.faturaInicial) throw new Error('Compra no crédito sem cartão ou fatura')
+      const cartao = await db.cards.get(dados.cardId)
       const qtd = dados.parcelas ?? 1
       const grupo = qtd > 1 ? newId() : undefined
       novos = parcelar(dados.valor, qtd, dados.faturaInicial).map((p) => ({
         ...base,
         id: newId(),
         valor: p.valor,
+        mesBalanco: mesNoBalanco({ ...base, faturaRef: p.faturaRef }, cartao),
         cardId: dados.cardId,
         faturaRef: p.faturaRef,
         parcelaGrupoId: grupo,
@@ -98,7 +100,7 @@ export async function salvarCompra(dados: DadosCompra, substituir: string[] = []
         updatedAt: agora,
       }))
     } else {
-      novos = [{ ...base, id: newId(), valor: dados.valor, createdAt, updatedAt: agora }]
+      novos = [{ ...base, id: newId(), valor: dados.valor, mesBalanco: mesNoBalanco(base), createdAt, updatedAt: agora }]
     }
 
     await db.transactions.bulkDelete(substituir)

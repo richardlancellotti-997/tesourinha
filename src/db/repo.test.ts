@@ -85,6 +85,18 @@ describe('crédito', () => {
     expect(new Set(txs.map((t) => t.parcelaGrupoId)).size).toBe(1)
   })
 
+  it('cada parcela conta no balanço do mês em que a fatura vence', async () => {
+    const cardId = await salvarCartao({ nome: 'C', diaFechamento: 28, diaVencimento: 5 })
+    await salvarCompra({ ...credito, cardId, parcelas: 3 })
+    const meses = (await db.transactions.toArray()).map((t) => t.mesBalanco).sort()
+    expect(meses).toEqual(['2026-11', '2026-12', '2027-01'])
+  })
+
+  it('débito conta no mês da data', async () => {
+    const [id] = await salvarCompra(gasto)
+    expect((await db.transactions.get(id))?.mesBalanco).toBe('2026-10')
+  })
+
   it('à vista no crédito não cria grupo de parcelas', async () => {
     const [id] = await salvarCompra({ ...credito, parcelas: 1 })
     const tx = await db.transactions.get(id)
@@ -157,6 +169,22 @@ describe('backup', () => {
     expect(await db.categories.count()).toBe(13)
     expect(await db.transactions.count()).toBe(1)
     expect((await db.profile.get(PERFIL_ID))?.nome).toBe('Richard')
+  })
+
+  it('restaura backup da versão 1 preenchendo o mês no balanço', async () => {
+    const antigo = {
+      app: 'tesourinha',
+      versaoEsquema: 1,
+      exportadoEm: '2026-10-06T12:00:00Z',
+      dados: {
+        cards: [{ id: 'k', nome: 'C', diaFechamento: 14, diaVencimento: 21, arquivado: false, createdAt: 'x', updatedAt: 'x' }],
+        transactions: [
+          { ...gasto, id: 't1', formaPagamento: 'credito', cardId: 'k', faturaRef: '2026-11', createdAt: 'x', updatedAt: 'x' },
+        ],
+      },
+    }
+    await restaurarBackup(lerBackup(JSON.stringify(antigo)))
+    expect((await db.transactions.get('t1'))?.mesBalanco).toBe('2026-11')
   })
 
   it('recusa arquivos que não são backup', () => {

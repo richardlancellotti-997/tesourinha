@@ -110,6 +110,19 @@ body {
   font-variant-numeric: tabular-nums;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
+  /* Comporta-se como app: sem seleção de texto ao segurar e sem o menu de "copiar/procurar" */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  /* Sem zoom de toque duplo */
+  touch-action: manipulation;
+}
+
+/* Nos campos de digitação a seleção continua (para corrigir o texto) */
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 h1,

@@ -544,11 +544,31 @@
   white-space: nowrap;
 }
 
+/* Barra da categoria: parte à vista (tinta) + parte em parcelas do crédito (tom claro) */
+.barra-trilho {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+}
+
 .barra {
   height: 8px;
+  min-width: 3px;
+  background: color-mix(in oklab, var(--tinta) 82%, var(--papel));
+}
+
+.barra:last-child {
   border-radius: 0 4px 4px 0;
-  background: var(--tinta);
-  opacity: 0.82;
+}
+
+.barra-parcelas,
+.ponto-parcelas {
+  background: color-mix(in oklab, var(--tinta) 32%, var(--papel));
+}
+
+.lanc-valor.adiado {
+  color: var(--grafite);
+  font-weight: 500;
 }
 
 .barras-valor {

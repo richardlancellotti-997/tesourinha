@@ -13,9 +13,9 @@ import {
   type SituacaoFatura,
 } from '../../domain/invoice'
 import { formatValor } from '../../domain/money'
-import { href, navegar } from '../../router'
+import { href } from '../../router'
+import { abrirParcelaOuCompra } from '../abrirLancamento'
 import { avisar } from '../aviso'
-import { escolher } from '../folha'
 import { Icon } from '../Icon'
 
 const ROTULO_SITUACAO: Record<SituacaoFatura, string> = {
@@ -106,16 +106,8 @@ export function Cartao() {
     avisar('Pagamento desfeito')
   }
 
-  async function abrirCompra(t: Transaction) {
-    if (!t.parcelaGrupoId) return navegar(`/lancar/${t.id}`)
-    const nome = t.descricao || porId.get(t.categoriaId)?.nome || 'compra'
-    const escolha = await escolher(`Parcela ${t.parcelaNumero} de ${t.parcelaTotal}: ${nome}`, [
-      { valor: 'parcela', rotulo: 'Editar só esta parcela' },
-      { valor: 'compra', rotulo: 'Editar a compra toda' },
-    ])
-    if (escolha === 'parcela') navegar(`/lancar/${t.id}?parcela=1`)
-    else if (escolha === 'compra') navegar(`/lancar/${t.id}`)
-  }
+  const abrirCompra = (t: Transaction) =>
+    abrirParcelaOuCompra(t, t.descricao || porId.get(t.categoriaId)?.nome || 'compra')
 
   return (
     <main class="tela">

@@ -1,6 +1,7 @@
 // Backup completo em JSON: exportar e restaurar.
 
-import { db, nowISO, SCHEMA_VERSION } from './db'
+import { db, nowISO, preencherMesBalanco, SCHEMA_VERSION } from './db'
+import type { Card, Transaction } from './types'
 
 const TABELAS = [
   'profile',
@@ -62,7 +63,10 @@ export function lerBackup(texto: string): ArquivoBackup {
 
 /** Substitui TODOS os dados do aparelho pelos do backup, numa única transação. */
 export async function restaurarBackup(backup: ArquivoBackup): Promise<void> {
-  // Quando houver versão 2 do esquema, migrar aqui os dados de backups antigos.
+  // Backups de versões antigas do esquema: migrar os dados antes de gravar.
+  if (backup.versaoEsquema < 2) {
+    preencherMesBalanco((backup.dados.transactions ?? []) as Transaction[], (backup.dados.cards ?? []) as Card[])
+  }
   await db.transaction('rw', TABELAS.map((t) => db.table(t)), async () => {
     for (const t of TABELAS) {
       await db.table(t).clear()

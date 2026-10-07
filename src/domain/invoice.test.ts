@@ -4,6 +4,7 @@ import {
   faturaDaCompra,
   faturaPelaData,
   fechamentoDe,
+  mesNoBalanco,
   parcelar,
   situacaoDaFatura,
   vencimentoDe,
@@ -76,6 +77,23 @@ describe('parcelas', () => {
   })
   it('parcelas atravessam a virada do ano', () => {
     expect(parcelar(40000, 4, '2026-11').map((x) => x.faturaRef)).toEqual(['2026-11', '2026-12', '2027-01', '2027-02'])
+  })
+})
+
+describe('mês no balanço', () => {
+  it('débito e receita contam no mês da data', () => {
+    expect(mesNoBalanco({ formaPagamento: 'debito_pix', data: '2026-10-20' })).toBe('2026-10')
+  })
+  it('crédito conta no mês em que a fatura vence', () => {
+    // fecha 14, vence 21: fatura de novembro vence em novembro
+    expect(mesNoBalanco({ formaPagamento: 'credito', data: '2026-10-20', faturaRef: '2026-11' }, fecha14vence21)).toBe('2026-11')
+    // fecha 28, vence 5: fatura de outubro vence em novembro
+    expect(mesNoBalanco({ formaPagamento: 'credito', data: '2026-10-06', faturaRef: '2026-10' }, fecha28vence5)).toBe('2026-11')
+    // dezembro vence em janeiro do ano seguinte
+    expect(mesNoBalanco({ formaPagamento: 'credito', data: '2026-12-01', faturaRef: '2026-12' }, fecha28vence5)).toBe('2027-01')
+  })
+  it('sem a configuração do cartão, usa o mês da fatura', () => {
+    expect(mesNoBalanco({ formaPagamento: 'credito', data: '2026-10-06', faturaRef: '2026-10' })).toBe('2026-10')
   })
 })
 
