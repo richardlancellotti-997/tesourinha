@@ -570,9 +570,11 @@
   border-radius: 0 4px 4px 0;
 }
 
+/* Parcelas do crédito: amarelo fixo (nunca igual a uma cor de destaque).
+   Voucher: a cor de destaque escolhida, num tom mais claro. */
 .barra-parcelas,
 .ponto-parcelas {
-  background: color-mix(in oklab, var(--tinta) 32%, var(--papel));
+  background: var(--parcelas);
 }
 
 .barra-voucher,

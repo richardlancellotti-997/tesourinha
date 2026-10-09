@@ -213,6 +213,11 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   num mês futuro, só as esperadas nele ("A receber em novembro"); em meses passados,
   nenhuma.
 
+- Cores das barras "Para onde foi" (09/10/2026): parcelas do crédito em AMARELO FIXO
+  (`--parcelas`: #DDB13A claro / #D9A21F escuro), fora das cores de destaque; voucher na
+  cor de destaque escolhida, num tom mais claro; à vista na cor do texto. Conferido nas
+  5 cores × claro/escuro (diferença mínima ΔE OKLab 16).
+
 ### Próximo: Etapa 5 (acabamento)
 
 1. Revisão geral no iPhone com uso real (estados vazios, textos, acessibilidade).
