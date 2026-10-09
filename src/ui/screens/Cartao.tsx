@@ -16,7 +16,7 @@ import { formatValor } from '../../domain/money'
 import { href, navegar } from '../../router'
 import { abrirParcelaOuCompra } from '../abrirLancamento'
 import { avisar } from '../aviso'
-import { Icon } from '../Icon'
+import { Icon, PontoCategoria } from '../Icon'
 
 const ROTULO_SITUACAO: Record<SituacaoFatura, string> = {
   aberta: 'Aberta',
@@ -255,6 +255,7 @@ export function Cartao() {
                 >
                   <span class="lanc-texto">
                     <span class="lanc-principal">
+                      <PontoCategoria cor={cat?.cor} />
                       {t.descricao || cat?.nome || 'Sem categoria'}
                       {t.parcelaTotal && (
                         <span class="selo-parcela">

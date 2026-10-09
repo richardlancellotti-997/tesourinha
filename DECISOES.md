@@ -213,10 +213,13 @@ Plano completo e telas: https://claude.ai/artifact/YN9n7UbNbjMFK9WJnjk7nV
   num mês futuro, só as esperadas nele ("A receber em novembro"); em meses passados,
   nenhuma.
 
-- Cores das barras "Para onde foi" (09/10/2026): parcelas do crédito em AMARELO FIXO
-  (`--parcelas`: #DDB13A claro / #D9A21F escuro), fora das cores de destaque; voucher na
-  cor de destaque escolhida, num tom mais claro; à vista na cor do texto. Conferido nas
-  5 cores × claro/escuro (diferença mínima ΔE OKLab 16).
+- Cores das barras "Para onde foi" (09/10/2026): parcelas do crédito em AMARELO FIXO e
+  DISCRETO (`--parcelas`: #B39A52 claro / #A38A45 escuro), fora das cores de destaque;
+  voucher na cor de destaque mais clara (`--tom-voucher`: 28% no claro, 45% no escuro);
+  à vista na cor do texto. Conferido nas 5 cores × claro/escuro (ΔE OKLab mínimo 15).
+- Listas de lançamentos (Início, previstos, parcelas anteriores, compras da fatura,
+  gastos do voucher, receitas) mostram a bolinha da cor da categoria antes do nome,
+  a mesma de "Para onde foi".
 
 ### Próximo: Etapa 5 (acabamento)
 

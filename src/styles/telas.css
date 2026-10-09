@@ -579,7 +579,7 @@
 
 .barra-voucher,
 .ponto-voucher {
-  background: color-mix(in oklab, var(--acc) 45%, var(--papel));
+  background: var(--tom-voucher);
 }
 
 .legenda-coluna {
@@ -817,6 +817,12 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* Bolinha da categoria antes do nome nas listas */
+.ponto-lanc {
+  margin-right: 8px;
+  vertical-align: 1px;
 }
 
 .lanc-principal {

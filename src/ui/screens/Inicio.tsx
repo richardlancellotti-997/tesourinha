@@ -8,7 +8,7 @@ import { formatComSinal, formatValor } from '../../domain/money'
 import { agruparPorDia, juntarParcelas, principaisCategorias, resumoDoMes, type ItemCompra } from '../../domain/summary'
 import { href } from '../../router'
 import { abrirParcelaOuCompra } from '../abrirLancamento'
-import { Icon } from '../Icon'
+import { Icon, PontoCategoria } from '../Icon'
 
 const NOME_FORMA: Record<PaymentMethod, string> = { debito_pix: 'Débito/Pix', credito: 'Crédito', voucher: 'Voucher' }
 const COR_FORMA: Record<PaymentMethod, string> = {
@@ -258,6 +258,7 @@ export function Inicio() {
               <a key={t.id} class="lanc" href={href(`/recorrencia/${t.recorrenciaId}`)}>
                 <span class="lanc-texto">
                   <span class="lanc-principal">
+                    <PontoCategoria cor={porId.get(t.categoriaId)?.cor} />
                     {nomeDe(t)}
                     <span class="selo-parcela">todo mês</span>
                   </span>
@@ -280,6 +281,7 @@ export function Inicio() {
               <button key={t.id} class="lanc lanc-botao" onClick={() => abrirParcelaOuCompra(t, nomeDe(t))}>
                 <span class="lanc-texto">
                   <span class="lanc-principal">
+                    <PontoCategoria cor={porId.get(t.categoriaId)?.cor} />
                     {nomeDe(t)}
                     {t.parcelaTotal && (
                       <span class="selo-parcela">
@@ -331,6 +333,7 @@ function LinhaLancamento({ t, cat }: { t: Transaction & ItemCompra; cat?: Catego
     <a class="lanc" href={href(`/lancar/${t.id}`)}>
       <span class="lanc-texto">
         <span class="lanc-principal">
+          <PontoCategoria cor={cat?.cor} />
           {t.descricao || nomeCat}
           {t.parcelaTotal && <span class="selo-parcela">{t.parcelaTotal}x</span>}
         </span>

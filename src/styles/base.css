@@ -28,7 +28,9 @@
   --cat-cinza: #7a8088;
 
   /* Parcelas do crédito nas barras: amarelo fixo, fora das cores de destaque (não muda com o tema) */
-  --parcelas: #ddb13a;
+  --parcelas: #b39a52;
+  /* Gastos no voucher nas barras: a cor de destaque, mais clara */
+  --tom-voucher: color-mix(in oklab, var(--acc) 28%, var(--papel));
 
   --tabbar: 64px;
   color-scheme: light;
@@ -56,7 +58,8 @@
     --cat-ciano: #22a6b8;
     --cat-ocre: #bc8547;
     --cat-cinza: #8e959c;
-    --parcelas: #d9a21f;
+    --parcelas: #a38a45;
+    --tom-voucher: color-mix(in oklab, var(--acc) 45%, var(--papel));
     color-scheme: dark;
   }
 }
@@ -82,7 +85,8 @@
   --cat-ciano: #22a6b8;
   --cat-ocre: #bc8547;
   --cat-cinza: #8e959c;
-  --parcelas: #d9a21f;
+  --parcelas: #a38a45;
+  --tom-voucher: color-mix(in oklab, var(--acc) 45%, var(--papel));
   color-scheme: dark;
 }
 

@@ -7,7 +7,7 @@ import { diaMes, rotuloData, today } from '../../domain/dates'
 import { formatValor } from '../../domain/money'
 import { ehDiaNaEmpresa, feriadosEntre } from '../../domain/voucher'
 import { href } from '../../router'
-import { Icon } from '../Icon'
+import { Icon, PontoCategoria } from '../Icon'
 
 export function Voucher() {
   const hoje = today()
@@ -158,7 +158,10 @@ export function Voucher() {
               return (
                 <a key={t.id} class="lanc" href={href(`/lancar/${t.id}`)}>
                   <span class="lanc-texto">
-                    <span class="lanc-principal">{t.descricao || cat?.nome || 'Sem categoria'}</span>
+                    <span class="lanc-principal">
+                      <PontoCategoria cor={cat?.cor} />
+                      {t.descricao || cat?.nome || 'Sem categoria'}
+                    </span>
                     <span class="apoio">
                       {rotuloData(t.data, hoje)}
                       {t.descricao && cat ? `, ${cat.nome.toLowerCase()}` : ''}

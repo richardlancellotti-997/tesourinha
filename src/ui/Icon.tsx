@@ -41,6 +41,11 @@ export function Icon({ nome, class: classe, size }: { nome: string; class?: stri
   )
 }
 
+/** Bolinha da cor da categoria, a mesma de "Para onde foi", antes do nome nas listas. */
+export function PontoCategoria({ cor }: { cor?: string }) {
+  return <span class="ponto ponto-lanc" aria-hidden="true" style={{ background: `var(--cat-${cor ?? 'cinza'})` }} />
+}
+
 /** Quadrado colorido com o ícone da categoria. */
 export function IconeCategoria({ icone, cor }: { icone?: string; cor?: string }) {
   return (

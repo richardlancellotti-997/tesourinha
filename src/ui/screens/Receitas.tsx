@@ -8,7 +8,7 @@ import { formatComSinal, formatValor } from '../../domain/money'
 import { href, navegar, voltar } from '../../router'
 import { avisar } from '../aviso'
 import { escolher } from '../folha'
-import { Icon } from '../Icon'
+import { Icon, PontoCategoria } from '../Icon'
 
 export function Receitas() {
   const hoje = today()
@@ -93,7 +93,10 @@ export function Receitas() {
                   <div class="item-receita" key={p.id}>
                     <button class="item-receita-topo" onClick={() => opcoes(p)}>
                       <span class="lanc-texto">
-                        <span class="lanc-principal">{p.descricao || porId.get(p.categoriaId)?.nome || 'Receita'}</span>
+                        <span class="lanc-principal">
+                          <PontoCategoria cor={porId.get(p.categoriaId)?.cor} />
+                          {p.descricao || porId.get(p.categoriaId)?.nome || 'Receita'}
+                        </span>
                         <span class="apoio">
                           {[p.devedor, `esperado em ${diaMes(p.dataPrevista)}`].filter(Boolean).join(', ')}
                         </span>
@@ -127,7 +130,10 @@ export function Receitas() {
               {recebidasOrdem.map((t) => (
                 <a key={t.id} class="lanc" href={href(`/lancar/${t.id}`)}>
                   <span class="lanc-texto">
-                    <span class="lanc-principal">{t.descricao || porId.get(t.categoriaId)?.nome || 'Receita'}</span>
+                    <span class="lanc-principal">
+                      <PontoCategoria cor={porId.get(t.categoriaId)?.cor} />
+                      {t.descricao || porId.get(t.categoriaId)?.nome || 'Receita'}
+                    </span>
                     <span class="apoio">
                       {diaMes(t.data)}
                       {t.recorrenciaId ? ', todo mês' : ''}
